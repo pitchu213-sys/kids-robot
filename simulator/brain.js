@@ -215,7 +215,7 @@ class RobotBrain {
     }
 
     /**
-     * Calls Google Gemini AI (gemini-3.8-flash) with native conversational AUDIO & TEXT
+     * Calls Google Gemini AI with Automatic Model Fallback Chain & High-Demand Recovery
      */
     async requestGeminiVoice(userPrompt, isDirectTest = false) {
         const apiKey = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
@@ -224,109 +224,124 @@ class RobotBrain {
         const voiceName = this.geminiVoiceSelect.value || 'Puck';
         const systemPrompt = this.geminiSystemPrompt.value.trim();
 
-        // Updated to Google's current flagship: gemini-3.8-flash
-        const modelName = 'gemini-3.8-flash';
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        // Model Fallback Chain: prevents 503 / "high demand" bottlenecks
+        const candidateModels = [
+            'gemini-3.8-flash',
+            'gemini-2.5-flash',
+            'gemini-1.5-flash',
+            'gemini-2.5-pro',
+            'gemini-1.5-pro'
+        ];
 
-        // Attempt 1: Multimodal Audio + Text with voice
-        let payload = {
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-            contents: [
-                {
-                    role: 'user',
-                    parts: [{ text: userPrompt }]
-                }
-            ],
-            generationConfig: {
-                responseModalities: ["AUDIO", "TEXT"],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: {
-                            voiceName: voiceName
+        let lastError = null;
+
+        for (const modelName of candidateModels) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+                // Step 1: Attempt Multimodal Audio + Text
+                let payload = {
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO", "TEXT"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: voiceName }
+                            }
                         }
                     }
-                }
-            }
-        };
-
-        let response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        // If audio modality is not available on this specific model/tier, seamlessly fallback to TEXT
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            const errMsg = errData?.error?.message || '';
-            console.warn('First attempt failed:', errMsg);
-
-            if (errMsg.toLowerCase().includes('modality') || errMsg.toLowerCase().includes('speech') || errMsg.toLowerCase().includes('audio') || errMsg.toLowerCase().includes('unsupported')) {
-                payload = {
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
                 };
-                response = await fetch(url, {
+
+                let response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-            } else {
-                throw new Error(errMsg || `HTTP ${response.status}`);
+
+                // If audio cluster is busy (high demand) or unsupported, fallback to TEXT on the same model
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errMsg = errData?.error?.message || '';
+                    console.warn(`[${modelName}] Audio request error:`, errMsg);
+
+                    // Fallback to pure TEXT generation
+                    payload = {
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
+                    };
+
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errData2 = await response.json().catch(() => ({}));
+                        throw new Error(errData2?.error?.message || `HTTP ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+                const candidate = data.candidates?.[0];
+                if (!candidate) continue;
+
+                let audioBase64 = null;
+                let mimeType = 'audio/wav';
+                let textReply = '';
+
+                for (const part of candidate.content?.parts || []) {
+                    if (part.text) textReply += part.text;
+                    if (part.inlineData) {
+                        audioBase64 = part.inlineData.data;
+                        mimeType = part.inlineData.mimeType || 'audio/wav';
+                    }
+                }
+
+                if (!textReply && isDirectTest) {
+                    textReply = userPrompt;
+                }
+
+                this.logActivity(`🤖 رد الذكاء الاصطناعي (${modelName}): "${textReply}"`);
+
+                // Convert PCM/Audio if present
+                let finalAudioDataUrl = null;
+                if (audioBase64) {
+                    if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
+                        finalAudioDataUrl = this.pcmBase64ToWavDataUrl(audioBase64, 24000);
+                    } else {
+                        finalAudioDataUrl = `data:${mimeType};base64,${audioBase64}`;
+                    }
+                }
+
+                // Broadcast to Robot Face
+                if (finalAudioDataUrl) {
+                    this.broadcastCommand({
+                        event: 'PLAY_GEMINI_AUDIO',
+                        audioUrl: finalAudioDataUrl,
+                        text: textReply,
+                        face: 'speaking',
+                        led: { pattern: 'rainbow' }
+                    });
+                } else {
+                    // Smooth spoken voice on Face
+                    this.broadcastCommand({
+                        event: 'SAY_TEXT',
+                        text: textReply,
+                        face: 'speaking',
+                        led: { pattern: 'spin', color: '#00f2fe' }
+                    });
+                }
+
+                return { text: textReply, audioUrl: finalAudioDataUrl, model: modelName };
+            } catch (err) {
+                console.warn(`Model ${modelName} error: ${err.message}. Trying next candidate...`);
+                lastError = err;
             }
         }
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData?.error?.message || `HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        const candidate = data.candidates?.[0];
-        if (!candidate) throw new Error('لم يرجع Gemini أي رد');
-
-        let audioBase64 = null;
-        let mimeType = 'audio/wav';
-        let textReply = '';
-
-        for (const part of candidate.content?.parts || []) {
-            if (part.text) {
-                textReply += part.text;
-            }
-            if (part.inlineData) {
-                audioBase64 = part.inlineData.data;
-                mimeType = part.inlineData.mimeType || 'audio/wav';
-            }
-        }
-
-        if (!textReply && isDirectTest) {
-            textReply = userPrompt;
-        }
-
-        this.logActivity(`🤖 رد Gemini: "${textReply}"`);
-
-        // If PCM audio returned (audio/pcm;rate=24000), wrap with WAV header
-        let finalAudioDataUrl = null;
-        if (audioBase64) {
-            if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
-                finalAudioDataUrl = this.pcmBase64ToWavDataUrl(audioBase64, 24000);
-            } else {
-                finalAudioDataUrl = `data:${mimeType};base64,${audioBase64}`;
-            }
-        }
-
-        // Broadcast to Robot Face!
-        this.broadcastCommand({
-            event: 'PLAY_GEMINI_AUDIO',
-            audioUrl: finalAudioDataUrl,
-            text: textReply,
-            face: 'happy',
-            led: { pattern: 'rainbow' }
-        });
-
-        return { text: textReply, audioUrl: finalAudioDataUrl };
+        throw new Error(lastError ? lastError.message : 'عذراً، خوادم Google تواجه ضغطاً مؤقتاً.');
     }
 
     /**
