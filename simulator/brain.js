@@ -614,6 +614,8 @@ class RobotBrain {
                         console.error('Auto Gemini reply error:', e);
                     }
                 }
+            } else if (data.event === 'ROBOT_REPLIED') {
+                this.logActivity(`🤖 الروبوت أجاب الطفل: "${data.reply}"`);
             } else if (data.event === 'ROBOT_FACE_ONLINE') {
                 this.statusDot.style.background = '#10b981';
                 this.statusText.innerText = 'وجه الروبوت متصل ونشط 🤖';

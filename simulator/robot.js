@@ -531,29 +531,118 @@ class RobotSimulator {
                 this.micBtn.classList.add('listening');
                 this.voiceWave.classList.add('active');
                 this.setEmotion('listening');
+                this.storyText.innerText = "أنا أسمعك يا بطل... تفضل وتكلم! 👂";
             };
 
             this.recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                this.storyText.innerText = `سمعتك تقول: "${transcript}"! 🌟`;
-                this.onChildAnswer(transcript);
+                console.log('Child voice transcript:', transcript);
+                this.storyText.innerText = `سمعتك تقول: "${transcript}" 🌟`;
+                this.onChildSpeechHeard(transcript);
             };
 
             this.recognition.onend = () => {
                 this.isListening = false;
                 this.micBtn.classList.remove('listening');
                 this.voiceWave.classList.remove('active');
-                if (this.waitingForAction === 'voice') {
-                    // Automatically proceed if finished
-                    this.advanceStory();
-                }
             };
 
-            this.recognition.onerror = () => {
+            this.recognition.onerror = (err) => {
+                console.warn('Speech recognition error:', err);
                 this.isListening = false;
                 this.micBtn.classList.remove('listening');
                 this.voiceWave.classList.remove('active');
             };
+        }
+    }
+
+    async onChildSpeechHeard(transcript) {
+        // Broadcast to Parent Brain Dashboard
+        if (this.bus) {
+            this.bus.postMessage({ event: 'CHILD_SPOKE', transcript: transcript });
+        }
+
+        // If in story mode waiting for voice
+        if (this.waitingForAction === 'voice') {
+            this.waitingForAction = null;
+            this.setEmotion('happy');
+            this.playCuteBeep('happy');
+            setTimeout(() => {
+                this.advanceStory();
+            }, 1200);
+            return;
+        }
+
+        // Full AI Conversational Response with Gemini
+        await this.askGeminiAndReply(transcript);
+    }
+
+    async askGeminiAndReply(childText) {
+        const apiKey = localStorage.getItem('kids_robot_gemini_key');
+        
+        // Visual Thinking Mode
+        this.setEmotion('curious');
+        this.setLedPattern('spin', '#a855f7');
+        this.storyText.innerText = `أفكر في إجابة لسؤالك الذكي... 🤔`;
+        this.playCuteBeep('happy');
+
+        // Fallback if API key not saved yet
+        if (!apiKey) {
+            setTimeout(() => {
+                const reply = `يا لك من طفل ذكي وبطل! سؤالك رائع جداً، أنا أحبك كثيراً! 🌟`;
+                this.storyText.innerText = reply;
+                this.speakArabic(reply, () => {
+                    this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
+                });
+            }, 800);
+            return;
+        }
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+            const systemPrompt = localStorage.getItem('kids_robot_gemini_prompt') || 
+                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. إجاباتك يجب أن تكون قصيرة ومشوقة جداً (جملة أو جملتان كحد أقصى) ومناسبة لعمر الأطفال، مع لمسة كرتونية لطيفة وتشجيعية.";
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: 'user', parts: [{ text: childText }] }]
+            };
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            let textReply = '';
+            if (res.ok) {
+                const data = await res.json();
+                textReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            }
+
+            if (!textReply) {
+                textReply = `أنت طفل مبدع وسؤالك أسعدني كثيراً يا بطل! 🌟`;
+            }
+
+            this.storyText.innerText = textReply;
+            this.setEmotion('happy');
+
+            // Play voice
+            const audioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(textReply);
+            this.playAudioFile(audioUrl, () => {
+                this.setEmotion('happy');
+                this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
+            }, textReply);
+
+            // Log to Parent Dashboard
+            if (this.bus) {
+                this.bus.postMessage({ event: 'ROBOT_REPLIED', reply: textReply });
+            }
+        } catch (e) {
+            console.warn('Gemini chat error:', e);
+            const fallbackReply = `فكرة مدهشة يا بطل! أنت أذكى طفل في العالم! ❤️`;
+            this.storyText.innerText = fallbackReply;
+            this.speakArabic(fallbackReply);
         }
     }
 
