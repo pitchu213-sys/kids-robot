@@ -422,6 +422,49 @@ class RobotSimulator {
     }
 
     // --- 4. SPEECH SYNTHESIS (TTS) & RECOGNITION (STT) ---
+    playAudioFile(url, onComplete) {
+        if (this.currentAudio) {
+            this.currentAudio.pause();
+            this.currentAudio = null;
+        }
+
+        const audio = new Audio(url);
+        this.currentAudio = audio;
+
+        audio.onplay = () => {
+            this.isSpeaking = true;
+            this.setEmotion('speaking');
+        };
+
+        audio.onended = () => {
+            this.isSpeaking = false;
+            const targetEmotion = this.currentStory?.[this.storyIndex]?.face || 'happy';
+            this.setEmotion(targetEmotion);
+            if (onComplete) onComplete();
+        };
+
+        audio.onerror = (e) => {
+            console.warn('Audio file error, falling back to speech synthesis:', e);
+            this.isSpeaking = false;
+            const chunk = this.currentStory?.[this.storyIndex];
+            if (chunk && chunk.text) {
+                this.speakArabic(chunk.text, onComplete);
+            } else if (onComplete) {
+                onComplete();
+            }
+        };
+
+        audio.play().catch(e => {
+            console.warn('Audio play restricted, falling back to speech synth:', e);
+            const chunk = this.currentStory?.[this.storyIndex];
+            if (chunk && chunk.text) {
+                this.speakArabic(chunk.text, onComplete);
+            } else if (onComplete) {
+                onComplete();
+            }
+        });
+    }
+
     speakArabic(text, onComplete) {
         if (!this.speechSynth) {
             if (onComplete) onComplete();
@@ -431,8 +474,8 @@ class RobotSimulator {
         this.speechSynth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ar-SA';
-        utterance.rate = 0.95; // Friendly child pace
-        utterance.pitch = 1.25; // Cheerful slightly higher pitch
+        utterance.rate = 0.90;  // Gentle, friendly child pace
+        utterance.pitch = 1.35; // Cheerful cartoon higher pitch
 
         // Select Arabic voice if available
         const voices = this.speechSynth.getVoices();
@@ -548,6 +591,7 @@ class RobotSimulator {
             space: [
                 {
                     text: "مرحباً يا صديقي البطل! أنا روبوتك الذكي، هل أنت مستعد لرحلة مذهلة في الفضاء؟ 🚀",
+                    audio: "audio/space_1.mp3",
                     face: "happy",
                     led: { pattern: "spin", color: "#00f2fe" },
                     action: "touch",
@@ -555,6 +599,7 @@ class RobotSimulator {
                 },
                 {
                     text: "رووووعة! لقد انطلقنا إلى الفضاء الخارجي! انظر للنجوم البراقة حولنا... ✨",
+                    audio: "audio/space_2.mp3",
                     face: "wonder",
                     led: { pattern: "rainbow" },
                     action: "touch",
@@ -562,6 +607,7 @@ class RobotSimulator {
                 },
                 {
                     text: "أرى كوكباً سحرياً ملوناً! قل لي بصوتك عبر الميكروفون: ما هو لونك المفضل لنلون به الكوكب؟ 🎨",
+                    audio: "audio/space_3.mp3",
                     face: "curious",
                     led: { pattern: "pulse", color: "#a855f7" },
                     action: "voice",
@@ -569,6 +615,7 @@ class RobotSimulator {
                 },
                 {
                     text: "يا له من اختيار ساحر وذوق رفيع! لقد أصبح الكوكب جميلاً بفضلك يا بطل! 🌟",
+                    audio: "audio/space_4.mp3",
                     face: "love",
                     led: { pattern: "sparkle", color: "#ec4899" },
                     action: "touch",
@@ -576,6 +623,7 @@ class RobotSimulator {
                 },
                 {
                     text: "عدنا بسلام إلى الأرض! لقد كنت رائعاً اليوم. أحبك كثيراً وإلى اللقاء في مغامرة قادمة! ❤️",
+                    audio: "audio/space_5.mp3",
                     face: "happy",
                     led: { pattern: "pulse", color: "#00ff88" },
                     action: null,
@@ -585,6 +633,7 @@ class RobotSimulator {
             animals: [
                 {
                     text: "أهلاً بك في الغابة السحرية! اسمع... هناك صوت حيوان لطيف يقترب منا 🦁",
+                    audio: "audio/animals_1.mp3",
                     face: "curious",
                     led: { pattern: "spin", color: "#ff9800" },
                     action: "touch",
@@ -592,6 +641,7 @@ class RobotSimulator {
                 },
                 {
                     text: "إنه الأسد سيمبا اللطيف! يبتسم لك ويهديك زهرة ذهبية 🌼",
+                    audio: "audio/animals_2.mp3",
                     face: "happy",
                     led: { pattern: "pulse", color: "#ffcf00" },
                     action: "touch",
@@ -599,6 +649,7 @@ class RobotSimulator {
                 },
                 {
                     text: "ما هو حيوانك المفضل في الغابة؟ قل لي بصوتك عبر الميكروفون!",
+                    audio: "audio/animals_3.mp3",
                     face: "curious",
                     led: { pattern: "pulse", color: "#22c55e" },
                     action: "voice",
@@ -606,6 +657,7 @@ class RobotSimulator {
                 },
                 {
                     text: "حيوان رائع وذكي مثلك تماماً! الحيوانات كلها سعيدة بوجودك بيننا اليوم 🎉",
+                    audio: "audio/animals_4.mp3",
                     face: "wonder",
                     led: { pattern: "rainbow" },
                     action: null,
@@ -634,12 +686,18 @@ class RobotSimulator {
 
         this.waitingForAction = chunk.action;
 
-        // Speak chunk aloud in Arabic
-        this.speakArabic(chunk.text, () => {
+        // Play high-quality child-robot MP3 or fallback to speech synthesis
+        const onFinish = () => {
             if (chunk.hint) {
                 this.storyText.innerText = chunk.hint;
             }
-        });
+        };
+
+        if (chunk.audio) {
+            this.playAudioFile(chunk.audio, onFinish);
+        } else {
+            this.speakArabic(chunk.text, onFinish);
+        }
     }
 
     advanceStory() {

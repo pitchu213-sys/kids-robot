@@ -7,6 +7,7 @@
     {
       "id": "chunk_1",
       "text": "مرحباً يا صديقي البطل! أنا روبوتك الذكي، هل أنت مستعد لرحلة مذهلة في الفضاء الخارجي؟ 🚀",
+      "audio": "audio/space_1.mp3",
       "face": "happy",
       "led": { "pattern": "spin", "color": "#00f2fe" },
       "action_required": "wait_touch",
@@ -15,6 +16,7 @@
     {
       "id": "chunk_2",
       "text": "رووووعة! لقد انطلقنا بسرعة الضوء إلى الفضاء! انظر إلى النجوم والكواكب المتلألئة حولنا... ✨",
+      "audio": "audio/space_2.mp3",
       "face": "wonder",
       "led": { "pattern": "rainbow" },
       "action_required": "wait_touch",
@@ -23,6 +25,7 @@
     {
       "id": "chunk_3",
       "text": "أرى كوكباً سحرياً جديداً ينتظر اسماً! قل لي بصوتك عبر الميكروفون: ما هو اللون أو الاسم الذي تريده لهذا الكوكب؟ 🎨",
+      "audio": "audio/space_3.mp3",
       "face": "curious",
       "led": { "pattern": "pulse", "color": "#a855f7" },
       "action_required": "wait_voice",
@@ -31,6 +34,7 @@
     {
       "id": "chunk_4",
       "text": "يا له من اختيار ساحر وذوق رفيع! لقد أصبح الكوكب جميلاً ومضيئاً بفضلك يا بطل! 🌟",
+      "audio": "audio/space_4.mp3",
       "face": "love",
       "led": { "pattern": "sparkle", "color": "#ec4899" },
       "action_required": "wait_touch",
@@ -39,6 +43,7 @@
     {
       "id": "chunk_5",
       "text": "عدنا بسلام إلى الأرض! لقد كنت مستكشفاً شجاعاً وذكياً اليوم. أحبك كثيراً وإلى اللقاء في مغامرة قادمة! ❤️",
+      "audio": "audio/space_5.mp3",
       "face": "happy",
       "led": { "pattern": "pulse", "color": "#00ff88" },
       "action_required": null,
