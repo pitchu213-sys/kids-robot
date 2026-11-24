@@ -459,7 +459,9 @@ class RobotSimulator {
 
         audio.onplay = () => {
             this.isSpeaking = true;
-            this.setEmotion('speaking');
+            if (this.emotion === 'happy') {
+                this.setEmotion('speaking');
+            }
         };
 
         audio.onended = () => {
@@ -533,7 +535,8 @@ class RobotSimulator {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRec) {
             this.recognition = new SpeechRec();
-            this.recognition.lang = 'ar-SA';
+            // Default to Tunisian Arabic 'ar-TN' with MSA compatibility
+            this.recognition.lang = localStorage.getItem('kids_robot_lang') || 'ar-TN';
             this.recognition.continuous = false;
             this.recognition.interimResults = false;
 
@@ -605,16 +608,68 @@ class RobotSimulator {
         const normInput = this.normalizeArabic(transcript);
         if (!normInput) return null;
 
+        const stopWords = ['يا', 'في', 'من', 'على', 'هل', 'هو', 'هي', 'مع', 'و', 'ان', 'ما', 'عن'];
+        const inputWords = normInput.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
+
+        let bestItem = null;
+        let highestScore = 0;
+
         for (const item of this.qaLibrary) {
-            if (!item.triggers) continue;
-            for (const trig of item.triggers) {
-                const normTrig = this.normalizeArabic(trig);
-                if (normTrig && (normInput === normTrig || normInput.includes(normTrig) || normTrig.includes(normInput))) {
-                    return item;
+            let score = 0;
+            const normTitle = this.normalizeArabic(item.title || '');
+            const normCat = this.normalizeArabic(item.category || '');
+
+            // 1. Exact match with title or category
+            if (normInput === normTitle) score += 1000;
+            if (normInput === normCat) score += 800;
+
+            // Substring / partial of title or category
+            if (normInput.includes(normTitle) || (normInput.length >= 4 && normTitle.includes(normInput))) {
+                score += 400;
+            }
+            if (normCat && (normInput.includes(normCat) || (normInput.length >= 4 && normCat.includes(normInput)))) {
+                score += 300;
+            }
+
+            // Title and Category word overlap
+            const metaWords = (normTitle + ' ' + normCat).split(' ').filter(w => w.length > 2 && !stopWords.includes(w));
+            for (const w of inputWords) {
+                if (metaWords.includes(w)) score += 150;
+            }
+
+            // 2. Triggers (Tunisian dialect & MSA)
+            if (item.triggers) {
+                for (const trig of item.triggers) {
+                    const normTrig = this.normalizeArabic(trig);
+                    if (!normTrig) continue;
+
+                    if (normInput === normTrig) {
+                        score += 1000;
+                    } else if (normInput.includes(normTrig)) {
+                        score += 500 + normTrig.length * 5;
+                    } else if (normTrig.includes(normInput) && normInput.length >= 3) {
+                        score += 250 + normInput.length * 5;
+                    } else {
+                        // Word overlap
+                        const trigWords = normTrig.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
+                        let matchedWords = 0;
+                        for (const tw of trigWords) {
+                            if (inputWords.includes(tw)) matchedWords++;
+                        }
+                        if (matchedWords > 0) {
+                            score += (matchedWords / trigWords.length) * 200;
+                        }
+                    }
                 }
             }
+
+            if (score > highestScore) {
+                highestScore = score;
+                bestItem = item;
+            }
         }
-        return null;
+
+        return highestScore >= 100 ? bestItem : null;
     }
 
     playQAResponse(qaItem) {
