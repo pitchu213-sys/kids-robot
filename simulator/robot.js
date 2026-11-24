@@ -64,7 +64,40 @@ class RobotSimulator {
         this.storyIndex = 0;
         this.waitingForAction = null; // 'touch', 'voice', null
 
+        // Cross-tab / Multi-device Sync Bus with Robot Brain
+        this.bus = new BroadcastChannel('kids_robot_bus');
+        this.setupBusListener();
+
+        // Notify Brain that Robot Face is active
+        this.bus.postMessage({ event: 'ROBOT_FACE_ONLINE' });
+
         this.init();
+    }
+
+    setupBusListener() {
+        this.bus.onmessage = (event) => {
+            const data = event.data;
+            if (!data) return;
+
+            console.log('Received from Brain:', data);
+
+            if (data.event === 'SAY_TEXT') {
+                if (data.face) this.setEmotion(data.face);
+                if (data.led) this.setLedPattern(data.led.pattern, data.led.color);
+                if (data.text) {
+                    this.storyText.innerText = data.text;
+                    this.speakArabic(data.text);
+                }
+            } else if (data.event === 'SET_FACE') {
+                this.setEmotion(data.face);
+            } else if (data.event === 'SET_LED') {
+                this.setLedPattern(data.led.pattern, data.led.color);
+            } else if (data.event === 'START_STORY') {
+                this.loadLocalDemoStory(data.story_id);
+            } else if (data.event === 'BRAIN_HELLO') {
+                this.bus.postMessage({ event: 'ROBOT_FACE_ONLINE' });
+            }
+        };
     }
 
     init() {
@@ -485,12 +518,17 @@ class RobotSimulator {
 
         // Visual feedback
         const touchPill = document.querySelector('.touch-pill');
-        touchPill.classList.add('active');
-        setTimeout(() => touchPill.classList.remove('active'), 250);
+        if (touchPill) {
+            touchPill.classList.add('active');
+            setTimeout(() => touchPill.classList.remove('active'), 250);
+        }
 
         this.playCuteBeep('touch');
 
-        // Notify WebSocket server if connected
+        // Notify Brain Bus & WebSocket
+        if (this.bus) {
+            this.bus.postMessage({ event: 'TOUCH_TRIGGER', timestamp: Date.now() });
+        }
         if (this.isConnected && this.ws) {
             this.ws.send(JSON.stringify({ event: 'TOUCH_TRIGGER', timestamp: Date.now() }));
         }

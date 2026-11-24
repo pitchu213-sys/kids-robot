@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>عقل الروبوت - لوحة التحكم والمحتوى للأهل</title>
+    <link rel="stylesheet" href="brain.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="brain-app-container">
+        
+        <!-- Header -->
+        <header class="brain-header">
+            <div class="logo-area">
+                <span class="brain-icon">🧠</span>
+                <div>
+                    <h1>عقل الروبوت الذكي</h1>
+                    <p class="subtitle">لوحة الإدارة والتحكم في محتوى وتفاعل الروبوت</p>
+                </div>
+            </div>
+            
+            <div class="connection-status-pill">
+                <span class="status-indicator-dot" id="brainStatusDot"></span>
+                <span id="brainStatusText">متصل بالروبوت</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="brain-tabs">
+            <button class="tab-btn active" data-tab="live-control">🎮 التحكم المباشر</button>
+            <button class="tab-btn" data-tab="stories">📚 القصص والمغامرات</button>
+            <button class="tab-btn" data-tab="child-profile">👶 بيانات واهتمامات الطفل</button>
+            <button class="tab-btn" data-tab="logs">📊 سجل تفاعل الطفل</button>
+        </nav>
+
+        <main class="brain-content">
+            
+            <!-- TAB 1: LIVE REMOTE CONTROL -->
+            <section class="tab-pane active" id="tab-live-control">
+                
+                <!-- Instant Speech Transmission -->
+                <div class="card highlight-card">
+                    <h2>🗣️ اجعل الروبوت يتكلم مع طفلك فوراً</h2>
+                    <p class="card-desc">اكتب أي جملة أو توجيه ليقوله الروبوت بصوته وتعبيراته مباشرة للطفل:</p>
+                    
+                    <div class="speech-input-box">
+                        <textarea id="customSpeechText" rows="3" placeholder="مثال: يا بطل، حان وقت ترتيب ألعابك لنأكل الآيسكريم معاً!"></textarea>
+                        <div class="speech-actions">
+                            <select id="speechEmotionSelect">
+                                <option value="happy">😊 تعبير فرحان</option>
+                                <option value="wonder">🤩 تعبير مندهش</option>
+                                <option value="love">❤️ تعبير حب وتشجيع</option>
+                                <option value="curious">🤔 تعبير فضولي</option>
+                                <option value="sleepy">😴 تعبير نعسان</option>
+                            </select>
+                            <button class="btn-primary" id="sendSpeechBtn">🚀 إرسال ونطق على الروبوت</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Parenting Presets -->
+                    <div class="quick-phrases-area">
+                        <label>عبارات توجيهية سريعة بنقرة واحدة:</label>
+                        <div class="quick-tags">
+                            <button class="quick-phrase-btn" data-text="حان وقت النوم يا بطل! لنذهب لغرفتنا ونستعد للأحلام السعيدة 😴" data-emotion="sleepy">🛏️ وقت النوم</button>
+                            <button class="quick-phrase-btn" data-text="تناول طعامك اللذيذ يا صديقي لتصبح قوياً وبطلاً خارقاً! 🥦" data-emotion="happy">🍲 وقت الطعام</button>
+                            <button class="quick-phrase-btn" data-text="لقد رتبت غرفتك بامتياز! أنا فخور بك جداً وأحبك ❤️" data-emotion="love">🌟 تشجيع ومدح</button>
+                            <button class="quick-phrase-btn" data-text="ما رأيك أن نراجع دروسنا وواجباتنا الآن لنصبح أذكياء جداً؟ 📚" data-emotion="curious">✏️ وقت المذاكرة</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remote Face Emotions Grid -->
+                <div class="card">
+                    <h2>😊 التحكم في تعبيرات الوجه الحية</h2>
+                    <p class="card-desc">تغيير مشاعر ونظرات الشاشة الدائرية (GC9A01) بلحظتها:</p>
+                    <div class="remote-grid">
+                        <button class="remote-btn" data-action="face" data-val="happy">
+                            <span class="icon">😊</span>
+                            <span class="label">فرحان</span>
+                        </button>
+                        <button class="remote-btn" data-action="face" data-val="wonder">
+                            <span class="icon">🤩</span>
+                            <span class="label">مندهش</span>
+                        </button>
+                        <button class="remote-btn" data-action="face" data-val="curious">
+                            <span class="icon">🤔</span>
+                            <span class="label">فضولي</span>
+                        </button>
+                        <button class="remote-btn" data-action="face" data-val="love">
+                            <span class="icon">❤️</span>
+                            <span class="label">حب وتشجيع</span>
+                        </button>
+                        <button class="remote-btn" data-action="face" data-val="sleepy">
+                            <span class="icon">😴</span>
+                            <span class="label">نائم</span>
+                        </button>
+                        <button class="remote-btn" data-action="face" data-val="listening">
+                            <span class="icon">👂</span>
+                            <span class="label">يستمع للطفل</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remote 12 WS2812 LED Ring Controls -->
+                <div class="card">
+                    <h2>💡 التحكم في حلقة 12 LED (WS2812)</h2>
+                    <p class="card-desc">بث حركات وألوان الإضاءة المحيطة بوجه الروبوت:</p>
+                    <div class="remote-grid">
+                        <button class="remote-btn" data-action="led" data-val="rainbow">
+                            <span class="icon">🌈</span>
+                            <span class="label">قوس قزح</span>
+                        </button>
+                        <button class="remote-btn" data-action="led" data-val="spin" data-color="#00f2fe">
+                            <span class="icon">💫</span>
+                            <span class="label">دوران أزرق</span>
+                        </button>
+                        <button class="remote-btn" data-action="led" data-val="pulse" data-color="#ff9800">
+                            <span class="icon">💓</span>
+                            <span class="label">نبض برتقالي</span>
+                        </button>
+                        <button class="remote-btn" data-action="led" data-val="sparkle" data-color="#ec4899">
+                            <span class="icon">✨</span>
+                            <span class="label">بريق وردي</span>
+                        </button>
+                        <button class="remote-btn" data-action="led" data-val="off">
+                            <span class="icon">🌑</span>
+                            <span class="label">إطفاء</span>
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 2: STORY & SCENARIOS -->
+            <section class="tab-pane" id="tab-stories">
+                <div class="card">
+                    <h2>📚 تشغيل وإدارة القصص التفاعلية</h2>
+                    <p class="card-desc">اختر القصة التي سيبدأ الروبوت بروايتها والتفاعل مع الطفل من خلالها:</p>
+
+                    <div class="stories-list">
+                        <div class="story-card active-story">
+                            <div class="story-info">
+                                <h3>🚀 رحلة رائد الفضاء الصغير</h3>
+                                <p>مغامرة استكشاف كواكب وتلوينها بالتفاعل الصوتي واللمسي.</p>
+                                <span class="badge">مناسبة للأعمار 4 - 9</span>
+                            </div>
+                            <button class="btn-primary" id="launchSpaceStory">تشغيل القصة على الروبوت ▶</button>
+                        </div>
+
+                        <div class="story-card">
+                            <div class="story-info">
+                                <h3>🦁 أصدقاء الغابة السحرية</h3>
+                                <p>التعرف على حيوانات الغابة ومساعدة الأسد سيمبا باللمس والصوت.</p>
+                                <span class="badge">مناسبة للأعمار 3 - 8</span>
+                            </div>
+                            <button class="btn-primary" id="launchAnimalsStory">تشغيل القصة على الروبوت ▶</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: CHILD PROFILE & PERSONALIZATION -->
+            <section class="tab-pane" id="tab-child-profile">
+                <div class="card">
+                    <h2>👶 بيانات واهتمامات طفلك (تخصيص الذكاء الاصطناعي)</h2>
+                    <p class="card-desc">هذه المعلومات تجعل الروبوت ينادي طفلك باسمه ويتحدث في المواضيع التي يحبها:</p>
+
+                    <form id="childProfileForm" class="profile-form">
+                        <div class="form-row">
+                            <label for="childName">اسم الطفل:</label>
+                            <input type="text" id="childName" placeholder="مثال: أحمد" value="بطلنا الصغير">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="childAge">عمر الطفل (سنوات):</label>
+                            <input type="number" id="childAge" min="2" max="12" value="5">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="childInterests">الاهتمامات والهوايات المفضلة:</label>
+                            <input type="text" id="childInterests" placeholder="مثال: الفضاء، الحيوانات، السيارات، الرسم" value="الفضاء والرسم">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="parentNotes">ملاحظات توجيهية خاصة للروبوت:</label>
+                            <textarea id="parentNotes" rows="2" placeholder="مثال: شجعه دائماً على النوم مبكراً وشرب الماء"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary">💾 حفظ بيانات الطفل في عقل الروبوت</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 4: ACTIVITY LOGS & TELEMETRY -->
+            <section class="tab-pane" id="tab-logs">
+                <div class="card">
+                    <div class="logs-header">
+                        <h2>📊 سجل التفاعل المباشر للطفل مع الروبوت</h2>
+                        <button class="btn-secondary" id="clearLogsBtn">مسح السجل</button>
+                    </div>
+                    <div class="log-stream" id="logStream">
+                        <div class="log-item info">
+                            <span class="log-time">الآن</span>
+                            <span class="log-msg">عقل الروبوت جاهز وينتظر تفاعل الطفل...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer / Link to Robot Face -->
+        <footer class="brain-footer">
+            <p>يمكنك فتح <strong>وجه الروبوت</strong> على هاتف آخر أو شاشة أخرى عبر الرابط: 
+               <a href="index.html" target="_blank">فتح وجه الروبوت (شاشة العرض) 🤖</a>
+            </p>
+        </footer>
+
+    </div>
+
+    <script src="brain.js"></script>
+</body>
+</html>

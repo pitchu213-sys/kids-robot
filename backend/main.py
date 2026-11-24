@@ -159,7 +159,12 @@ async def websocket_robot_endpoint(websocket: WebSocket):
             data = await websocket.receive_json()
             event_type = data.get("event")
 
-            if event_type == "TOUCH_TRIGGER":
+            # Broadcast any command from Brain directly to all connected devices (Face & ESP32)
+            if event_type in ["SAY_TEXT", "SET_FACE", "SET_LED", "START_STORY", "CHILD_PROFILE_UPDATED"]:
+                print(f"Routing command from Brain: {event_type}")
+                await manager.broadcast(data)
+
+            elif event_type == "TOUCH_TRIGGER":
                 print("Head touch triggered by device")
                 if current_story_data and current_chunk_idx < len(current_story_data["chunks"]):
                     chunk = current_story_data["chunks"][current_chunk_idx]

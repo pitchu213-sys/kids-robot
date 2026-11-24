@@ -430,6 +430,30 @@ select, input[type="text"] {
     border-color: var(--cyan-glow);
 }
 
+.child-bar {
+    padding: 0 16px 12px 16px;
+    gap: 14px;
+}
+
+.brain-link-btn {
+    text-decoration: none;
+    font-size: 1.4rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.brain-link-btn:active {
+    transform: scale(0.9);
+    background: rgba(99, 102, 241, 0.3);
+}
+
 /* Animations */
 @keyframes gentle-bounce {
     0%, 100% { transform: translateY(0); }
