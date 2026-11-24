@@ -332,7 +332,11 @@ class RobotBrain {
 
                     payload = {
                         systemInstruction: { parts: [{ text: systemPrompt }] },
-                        contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
+                        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                        generationConfig: {
+                            maxOutputTokens: 50,
+                            temperature: 0.7
+                        }
                     };
 
                     response = await fetch(url, {

@@ -491,8 +491,8 @@ class RobotSimulator {
         this.speechSynth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ar-SA';
-        utterance.rate = 0.90;  // Gentle, friendly child pace
-        utterance.pitch = 1.35; // Cheerful cartoon higher pitch
+        utterance.rate = 1.02;  // Natural, responsive conversation pace
+        utterance.pitch = 1.22; // Cheerful, warm kid-robot pitch
 
         // Select Arabic voice if available
         const voices = this.speechSynth.getVoices();
@@ -601,11 +601,16 @@ class RobotSimulator {
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
             const systemPrompt = localStorage.getItem('kids_robot_gemini_prompt') || 
-                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. إجاباتك يجب أن تكون قصيرة ومشوقة جداً (جملة أو جملتان كحد أقصى) ومناسبة لعمر الأطفال، مع لمسة كرتونية لطيفة وتشجيعية.";
+                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. إجاباتك يجب أن تكون قصيرة جداً (جملة واحدة فقط أو جملتان كحد أقصى) ومباشرة ومحفزة للطفل.";
 
+            // Ultra-fast generation payload with strict maxOutputTokens
             const payload = {
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: 'user', parts: [{ text: childText }] }]
+                contents: [{ role: 'user', parts: [{ text: childText }] }],
+                generationConfig: {
+                    maxOutputTokens: 50,
+                    temperature: 0.7
+                }
             };
 
             const res = await fetch(url, {
@@ -627,12 +632,11 @@ class RobotSimulator {
             this.storyText.innerText = textReply;
             this.setEmotion('happy');
 
-            // Play voice
-            const audioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(textReply);
-            this.playAudioFile(audioUrl, () => {
+            // Zero-latency instant local voice synthesis (starts in ~50ms!)
+            this.speakArabic(textReply, () => {
                 this.setEmotion('happy');
                 this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
-            }, textReply);
+            });
 
             // Log to Parent Dashboard
             if (this.bus) {
