@@ -137,6 +137,7 @@ class RobotBrain {
 
     // --- 3. GOOGLE GEMINI AI VOICE & CHAT INTEGRATION ---
     setupGeminiAI() {
+        this.availableModels = [];
         // Load saved API key & settings
         const savedKey = localStorage.getItem('kids_robot_gemini_key') || '';
         const savedVoice = localStorage.getItem('kids_robot_gemini_voice') || 'Puck';
@@ -146,26 +147,38 @@ class RobotBrain {
             this.geminiApiKeyInput.value = savedKey;
             this.geminiStatusBadge.innerHTML = '🟢 المفتاح محفوظ ومفعّل';
             this.geminiStatusBadge.style.color = '#10b981';
+            // Pre-fetch actual active models from Google
+            this.fetchAvailableModels(savedKey);
         }
 
         if (savedVoice) this.geminiVoiceSelect.value = savedVoice;
         if (savedPrompt) this.geminiSystemPrompt.value = savedPrompt;
 
         // Save Key Button
-        this.saveGeminiKeyBtn.addEventListener('click', () => {
+        this.saveGeminiKeyBtn.addEventListener('click', async () => {
             const key = this.geminiApiKeyInput.value.trim();
             if (!key) {
                 alert('الرجاء لصق مفتاح Gemini API أولاً!');
                 return;
             }
-            localStorage.setItem('kids_robot_gemini_key', key);
-            localStorage.setItem('kids_robot_gemini_voice', this.geminiVoiceSelect.value);
-            localStorage.setItem('kids_robot_gemini_prompt', this.geminiSystemPrompt.value);
+            this.geminiStatusBadge.innerHTML = '⏳ جاري فحص والتحقق من المفتاح مع Google...';
+            this.geminiStatusBadge.style.color = '#f59e0b';
 
-            this.geminiStatusBadge.innerHTML = '🟢 تم حفظ المفتاح بنجاح!';
-            this.geminiStatusBadge.style.color = '#10b981';
-            this.logActivity('💾 تم حفظ مفتاح Google Gemini وتحديث الإعدادات');
-            alert('تم حفظ مفتاح Gemini وتفعيل الصوت البشري الذكي بنجاح! 🎉');
+            const models = await this.fetchAvailableModels(key);
+            if (models.length > 0) {
+                localStorage.setItem('kids_robot_gemini_key', key);
+                localStorage.setItem('kids_robot_gemini_voice', this.geminiVoiceSelect.value);
+                localStorage.setItem('kids_robot_gemini_prompt', this.geminiSystemPrompt.value);
+
+                this.geminiStatusBadge.innerHTML = `🟢 متصل بنجاح! النماذج المتاحة: ${models.slice(0, 2).join(', ')}`;
+                this.geminiStatusBadge.style.color = '#10b981';
+                this.logActivity(`💾 تم فحص المفتاح بنجاح! النماذج المتاحة: ${models.join(', ')}`);
+                alert(`تم التحقق من المفتاح بنجاح! 🎉\nالنماذج النشطة في حسابك: ${models.slice(0, 3).join(', ')}`);
+            } else {
+                this.geminiStatusBadge.innerHTML = '❌ فشل التحقق، تأكد من صحة المفتاح';
+                this.geminiStatusBadge.style.color = '#ef4444';
+                alert('تعذر الاتصال بـ Google. يرجى التأكد من نسخ المفتاح كاملاً.');
+            }
         });
 
         // Test Voice Button
@@ -215,7 +228,37 @@ class RobotBrain {
     }
 
     /**
-     * Calls Google Gemini AI with Automatic Model Fallback Chain & High-Demand Recovery
+     * Dynamically queries Google API for exact active models for this key
+     */
+    async fetchAvailableModels(apiKey) {
+        if (this.availableModels && this.availableModels.length > 0) return this.availableModels;
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            if (res.ok) {
+                const data = await res.json();
+                const valid = (data.models || [])
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => m.name.replace('models/', ''));
+
+                if (valid.length > 0) {
+                    // Sort: prioritize flash models
+                    valid.sort((a, b) => {
+                        if (a.includes('flash') && !b.includes('flash')) return -1;
+                        if (!a.includes('flash') && b.includes('flash')) return 1;
+                        return 0;
+                    });
+                    this.availableModels = valid;
+                    return valid;
+                }
+            }
+        } catch (e) {
+            console.warn('ListModels failed:', e);
+        }
+        return ['gemini-3.8-flash'];
+    }
+
+    /**
+     * Calls Google Gemini AI dynamically with the exact active model returned by Google
      */
     async requestGeminiVoice(userPrompt, isDirectTest = false) {
         const apiKey = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
@@ -224,22 +267,16 @@ class RobotBrain {
         const voiceName = this.geminiVoiceSelect.value || 'Puck';
         const systemPrompt = this.geminiSystemPrompt.value.trim();
 
-        // Model Fallback Chain: prevents 503 / "high demand" bottlenecks
-        const candidateModels = [
-            'gemini-3.8-flash',
-            'gemini-2.5-flash',
-            'gemini-1.5-flash',
-            'gemini-2.5-pro',
-            'gemini-1.5-pro'
-        ];
-
+        // Dynamically get the models Google currently provides
+        const models = await this.fetchAvailableModels(apiKey);
         let lastError = null;
 
-        for (const modelName of candidateModels) {
+        for (const modelName of models) {
             try {
+                this.logActivity(`جاري استدعاء نموذج (${modelName})...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-                // Step 1: Attempt Multimodal Audio + Text
+                // Try with AUDIO modality first
                 let payload = {
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -259,13 +296,11 @@ class RobotBrain {
                     body: JSON.stringify(payload)
                 });
 
-                // If audio cluster is busy (high demand) or unsupported, fallback to TEXT on the same model
+                // If audio cluster has high-demand or unsupported, fallback to pure TEXT on this active model
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
-                    const errMsg = errData?.error?.message || '';
-                    console.warn(`[${modelName}] Audio request error:`, errMsg);
+                    console.warn(`[${modelName}] Audio attempt failed, trying text:`, errData?.error?.message);
 
-                    // Fallback to pure TEXT generation
                     payload = {
                         systemInstruction: { parts: [{ text: systemPrompt }] },
                         contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
@@ -305,7 +340,6 @@ class RobotBrain {
 
                 this.logActivity(`🤖 رد الذكاء الاصطناعي (${modelName}): "${textReply}"`);
 
-                // Convert PCM/Audio if present
                 let finalAudioDataUrl = null;
                 if (audioBase64) {
                     if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
@@ -325,7 +359,6 @@ class RobotBrain {
                         led: { pattern: 'rainbow' }
                     });
                 } else {
-                    // Smooth spoken voice on Face
                     this.broadcastCommand({
                         event: 'SAY_TEXT',
                         text: textReply,
@@ -336,12 +369,12 @@ class RobotBrain {
 
                 return { text: textReply, audioUrl: finalAudioDataUrl, model: modelName };
             } catch (err) {
-                console.warn(`Model ${modelName} error: ${err.message}. Trying next candidate...`);
+                console.warn(`Model ${modelName} error: ${err.message}`);
                 lastError = err;
             }
         }
 
-        throw new Error(lastError ? lastError.message : 'عذراً، خوادم Google تواجه ضغطاً مؤقتاً.');
+        throw new Error(lastError ? lastError.message : 'تعذر الاتصال بنماذج Google حالياً.');
     }
 
     /**
