@@ -100,7 +100,7 @@ class RobotSimulator {
                 if (data.audioUrl) {
                     this.playAudioFile(data.audioUrl, () => {
                         this.setEmotion('happy');
-                    });
+                    }, data.text);
                 } else if (data.text) {
                     this.speakArabic(data.text);
                 }
@@ -434,9 +434,12 @@ class RobotSimulator {
     }
 
     // --- 4. SPEECH SYNTHESIS (TTS) & RECOGNITION (STT) ---
-    playAudioFile(url, onComplete) {
+    playAudioFile(url, onComplete, fallbackText = null) {
         if (this.currentAudio) {
-            this.currentAudio.pause();
+            try {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+            } catch (e) {}
             this.currentAudio = null;
         }
 
@@ -450,31 +453,33 @@ class RobotSimulator {
 
         audio.onended = () => {
             this.isSpeaking = false;
-            const targetEmotion = this.currentStory?.[this.storyIndex]?.face || 'happy';
-            this.setEmotion(targetEmotion);
+            this.setEmotion('happy');
             if (onComplete) onComplete();
         };
 
-        audio.onerror = (e) => {
-            console.warn('Audio file error, falling back to speech synthesis:', e);
+        const doFallback = () => {
             this.isSpeaking = false;
-            const chunk = this.currentStory?.[this.storyIndex];
-            if (chunk && chunk.text) {
-                this.speakArabic(chunk.text, onComplete);
+            const textToSpeak = fallbackText || this.storyText?.innerText || '';
+            console.log('Falling back to speech synthesis for text:', textToSpeak);
+            if (textToSpeak) {
+                this.speakArabic(textToSpeak, onComplete);
             } else if (onComplete) {
                 onComplete();
             }
         };
 
-        audio.play().catch(e => {
-            console.warn('Audio play restricted, falling back to speech synth:', e);
-            const chunk = this.currentStory?.[this.storyIndex];
-            if (chunk && chunk.text) {
-                this.speakArabic(chunk.text, onComplete);
-            } else if (onComplete) {
-                onComplete();
-            }
-        });
+        audio.onerror = (e) => {
+            console.warn('Audio playback error, falling back:', e);
+            doFallback();
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.warn('Audio play restricted or failed, falling back:', e);
+                doFallback();
+            });
+        }
     }
 
     speakArabic(text, onComplete) {

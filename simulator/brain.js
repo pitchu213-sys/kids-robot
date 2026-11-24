@@ -264,6 +264,15 @@ class RobotBrain {
         const apiKey = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
         if (!apiKey) throw new Error('مفتاح Gemini API غير موجود');
 
+        // Rate limit spacer: ensure at least 2 seconds between calls to prevent 429
+        const now = Date.now();
+        if (this.lastGeminiCallTime && (now - this.lastGeminiCallTime < 2000)) {
+            const waitMs = 2000 - (now - this.lastGeminiCallTime);
+            this.logActivity(`⏳ انتظار ${Math.ceil(waitMs/1000)} ثانية لمنع ضغط Google...`);
+            await new Promise(r => setTimeout(r, waitMs));
+        }
+        this.lastGeminiCallTime = Date.now();
+
         const voiceName = this.geminiVoiceSelect.value || 'Puck';
         const systemPrompt = this.geminiSystemPrompt.value.trim();
 
@@ -296,6 +305,17 @@ class RobotBrain {
                     body: JSON.stringify(payload)
                 });
 
+                // If 429 Rate Limit, wait 2.5 seconds and retry
+                if (response.status === 429) {
+                    this.logActivity('⏳ حساب Google مؤقت، جاري الانتظار ثانيتين وإعادة المحاولة تلقائياً...', 'warn');
+                    await new Promise(r => setTimeout(r, 2500));
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
                 // If audio cluster has high-demand or unsupported, fallback to pure TEXT on this active model
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
@@ -311,6 +331,15 @@ class RobotBrain {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+
+                    if (response.status === 429) {
+                        await new Promise(r => setTimeout(r, 2500));
+                        response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
 
                     if (!response.ok) {
                         const errData2 = await response.json().catch(() => ({}));
