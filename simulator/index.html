@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="روبوت الأطفال">
+    <meta name="theme-color" content="#0a0c16">
+    <title>روبوت الأطفال الذكي - التوأم الرقمي</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="robot.css">
+    <!-- Google Fonts for friendly Arabic typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="mobile-container">
+        
+        <!-- Head Touch Sensor (TTP223 Emulation) -->
+        <header class="head-touch-zone" id="headTouchZone">
+            <div class="touch-pill">
+                <span class="touch-icon">👆</span>
+                <span class="touch-label">المس رأسي للتفاعل</span>
+                <span class="touch-sensor-indicator" id="touchSensorLed"></span>
+            </div>
+        </header>
+
+        <!-- Robot Core Display Unit -->
+        <main class="robot-body">
+            <!-- Outer Bezel containing the 12 WS2812 LEDs -->
+            <div class="led-ring-container" id="ledRingContainer">
+                <!-- 12 LEDs will be dynamically or statically positioned -->
+                <div class="neopixel-led" data-index="0"></div>
+                <div class="neopixel-led" data-index="1"></div>
+                <div class="neopixel-led" data-index="2"></div>
+                <div class="neopixel-led" data-index="3"></div>
+                <div class="neopixel-led" data-index="4"></div>
+                <div class="neopixel-led" data-index="5"></div>
+                <div class="neopixel-led" data-index="6"></div>
+                <div class="neopixel-led" data-index="7"></div>
+                <div class="neopixel-led" data-index="8"></div>
+                <div class="neopixel-led" data-index="9"></div>
+                <div class="neopixel-led" data-index="10"></div>
+                <div class="neopixel-led" data-index="11"></div>
+
+                <!-- Circular Display (GC9A01 240x240 Emulation) -->
+                <div class="screen-gc9a01" id="screenDisplay">
+                    <canvas id="faceCanvas" width="240" height="240"></canvas>
+                    
+                    <!-- Subtitle / Story Text Overlay -->
+                    <div class="story-overlay" id="storyOverlay">
+                        <p id="storyText">مرحباً يا بطل! المس رأسي لنبدأ مغامرتنا السحرية...</p>
+                    </div>
+
+                    <!-- Listening / Audio Visualizer Wave -->
+                    <div class="voice-wave-container" id="voiceWaveContainer">
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                        <span class="wave-bar"></span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Interaction / Action Bar for Child -->
+        <footer class="interaction-bar">
+            <button class="action-btn mic-btn" id="micBtn" title="تحدث مع الروبوت">
+                <span class="btn-icon">🎤</span>
+                <span class="btn-text">تحدث معي</span>
+            </button>
+
+            <button class="action-btn next-btn" id="nextStoryBtn" title="المقطع التالي">
+                <span class="btn-icon">✨</span>
+                <span class="btn-text">التالي</span>
+            </button>
+
+            <button class="action-btn settings-btn" id="toggleDrawerBtn" title="لوحة التحكم">
+                <span class="btn-icon">⚙️</span>
+            </button>
+        </footer>
+
+        <!-- Parent / Developer Control Drawer (Collapsible) -->
+        <aside class="control-drawer" id="controlDrawer">
+            <div class="drawer-header">
+                <h3>لوحة الأهل والتطوير</h3>
+                <button class="close-drawer-btn" id="closeDrawerBtn">✕</button>
+            </div>
+
+            <div class="drawer-content">
+                <!-- Connection Status -->
+                <div class="control-group">
+                    <label>حالة الاتصال بالسيرفر:</label>
+                    <div class="status-indicator-badge">
+                        <span class="status-dot" id="serverStatusDot"></span>
+                        <span id="serverStatusText">غير متصل (الوضع المستقل)</span>
+                    </div>
+                </div>
+
+                <!-- Story Selector -->
+                <div class="control-group">
+                    <label for="storySelector">اختر القصة التفاعلية:</label>
+                    <select id="storySelector">
+                        <option value="space">رحلة رائد الفضاء الصغير 🚀</option>
+                        <option value="animals">أصدقاء الغابة السحرية 🦁</option>
+                        <option value="free_chat">محادثة حرة وذكاء اصطناعي 🤖</option>
+                    </select>
+                    <button class="btn-secondary" id="restartStoryBtn">ابدأ القصة من البداية</button>
+                </div>
+
+                <!-- Face Emotion Override -->
+                <div class="control-group">
+                    <label>اختبار تعبيرات الوجه:</label>
+                    <div class="emotion-grid">
+                        <button class="tag-btn" data-emotion="happy">فرحان 😊</button>
+                        <button class="tag-btn" data-emotion="wonder">مندهش 🤩</button>
+                        <button class="tag-btn" data-emotion="curious">فضولي 🤔</button>
+                        <button class="tag-btn" data-emotion="listening">يستمع 👂</button>
+                        <button class="tag-btn" data-emotion="speaking">يتحدث 🗣️</button>
+                        <button class="tag-btn" data-emotion="sleepy">نائم 😴</button>
+                        <button class="tag-btn" data-emotion="love">حب ❤️</button>
+                    </div>
+                </div>
+
+                <!-- LED Pattern Override -->
+                <div class="control-group">
+                    <label>اختبار حلقة 12 LED (WS2812):</label>
+                    <div class="led-grid">
+                        <button class="tag-btn" data-led="rainbow">قوس قزح</button>
+                        <button class="tag-btn" data-led="spin">دوران</button>
+                        <button class="tag-btn" data-led="pulse">نبض</button>
+                        <button class="tag-btn" data-led="sparkle">بريق</button>
+                        <button class="tag-btn" data-led="off">إطفاء</button>
+                    </div>
+                </div>
+
+                <!-- Server Address Setup -->
+                <div class="control-group">
+                    <label for="serverUrlInput">عنوان سيرفر WebSocket:</label>
+                    <input type="text" id="serverUrlInput" placeholder="ws://localhost:8000/ws/robot">
+                    <button class="btn-secondary" id="reconnectBtn">إعادة الاتصال</button>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <script src="robot.js"></script>
+</body>
+</html>
