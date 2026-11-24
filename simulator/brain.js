@@ -215,7 +215,7 @@ class RobotBrain {
     }
 
     /**
-     * Calls Google Gemini 2.0 Flash with native conversational AUDIO modality
+     * Calls Google Gemini AI (gemini-3.8-flash) with native conversational AUDIO & TEXT
      */
     async requestGeminiVoice(userPrompt, isDirectTest = false) {
         const apiKey = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
@@ -224,10 +224,12 @@ class RobotBrain {
         const voiceName = this.geminiVoiceSelect.value || 'Puck';
         const systemPrompt = this.geminiSystemPrompt.value.trim();
 
-        // Target: Gemini 2.0 Flash with native Multimodal Audio Response
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        // Updated to Google's current flagship: gemini-3.8-flash
+        const modelName = 'gemini-3.8-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-        const payload = {
+        // Attempt 1: Multimodal Audio + Text with voice
+        let payload = {
             systemInstruction: {
                 parts: [{ text: systemPrompt }]
             },
@@ -249,11 +251,32 @@ class RobotBrain {
             }
         };
 
-        const response = await fetch(url, {
+        let response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+
+        // If audio modality is not available on this specific model/tier, seamlessly fallback to TEXT
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const errMsg = errData?.error?.message || '';
+            console.warn('First attempt failed:', errMsg);
+
+            if (errMsg.toLowerCase().includes('modality') || errMsg.toLowerCase().includes('speech') || errMsg.toLowerCase().includes('audio') || errMsg.toLowerCase().includes('unsupported')) {
+                payload = {
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
+                };
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                throw new Error(errMsg || `HTTP ${response.status}`);
+            }
+        }
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
