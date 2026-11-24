@@ -102,11 +102,11 @@ class RobotSimulator {
 
     init() {
         this.positionLeds();
+        this.startFaceLoop();
+        this.startLedAnimation();
         this.initAudioContext();
         this.initSpeechRecognition();
         this.setupEvents();
-        this.startLedAnimation();
-        this.startFaceLoop();
         this.loadLocalDemoStory('space');
         this.tryConnectWebSocket();
     }
@@ -671,8 +671,8 @@ class RobotSimulator {
 
             this.ws.onopen = () => {
                 this.isConnected = true;
-                this.serverStatusDot.classList.add('connected');
-                this.serverStatusText.innerText = 'متصل بالسيرفر (أوامر سحابية)';
+                if (this.serverStatusDot) this.serverStatusDot.classList.add('connected');
+                if (this.serverStatusText) this.serverStatusText.innerText = 'متصل بالسيرفر (أوامر سحابية)';
                 console.log('Connected to Kids-Robot Backend');
             };
 
@@ -687,14 +687,14 @@ class RobotSimulator {
 
             this.ws.onclose = () => {
                 this.isConnected = false;
-                this.serverStatusDot.classList.remove('connected');
-                this.serverStatusText.innerText = 'الوضع المستقل (غير متصل)';
+                if (this.serverStatusDot) this.serverStatusDot.classList.remove('connected');
+                if (this.serverStatusText) this.serverStatusText.innerText = 'الوضع المستقل (غير متصل)';
             };
 
             this.ws.onerror = () => {
                 this.isConnected = false;
-                this.serverStatusDot.classList.remove('connected');
-                this.serverStatusText.innerText = 'الوضع المستقل (غير متصل)';
+                if (this.serverStatusDot) this.serverStatusDot.classList.remove('connected');
+                if (this.serverStatusText) this.serverStatusText.innerText = 'الوضع المستقل (غير متصل)';
             };
         } catch (e) {
             this.isConnected = false;
@@ -717,58 +717,43 @@ class RobotSimulator {
     // --- 8. UI EVENT HANDLERS ---
     setupEvents() {
         // Head Touch
-        this.touchZone.addEventListener('click', () => this.handleHeadTouch());
-        this.touchZone.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.handleHeadTouch();
-        });
+        if (this.touchZone) {
+            this.touchZone.addEventListener('click', () => this.handleHeadTouch());
+            this.touchZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.handleHeadTouch();
+            });
+        }
 
         // Mic Button
-        this.micBtn.addEventListener('click', () => this.toggleMic());
+        if (this.micBtn) {
+            this.micBtn.addEventListener('click', () => this.toggleMic());
+        }
 
         // Next Button
-        this.nextBtn.addEventListener('click', () => this.advanceStory());
+        if (this.nextBtn) {
+            this.nextBtn.addEventListener('click', () => this.advanceStory());
+        }
 
-        // Drawer Toggle
-        this.settingsBtn.addEventListener('click', () => {
-            this.controlDrawer.classList.toggle('open');
-        });
-
-        this.closeDrawerBtn.addEventListener('click', () => {
-            this.controlDrawer.classList.remove('open');
-        });
-
-        // Emotion buttons in drawer
-        document.querySelectorAll('[data-emotion]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const em = e.target.getAttribute('data-emotion');
-                this.setEmotion(em);
+        // Optional drawer controls (if present)
+        if (this.settingsBtn && this.controlDrawer) {
+            this.settingsBtn.addEventListener('click', () => {
+                this.controlDrawer.classList.toggle('open');
             });
-        });
+        }
 
-        // LED buttons in drawer
-        document.querySelectorAll('[data-led]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const p = e.target.getAttribute('data-led');
-                this.setLedPattern(p);
+        if (this.closeDrawerBtn && this.controlDrawer) {
+            this.closeDrawerBtn.addEventListener('click', () => {
+                this.controlDrawer.classList.remove('open');
             });
-        });
+        }
 
-        // Story Selector in drawer
-        this.storySelector.addEventListener('change', (e) => {
-            this.loadLocalDemoStory(e.target.value);
-            this.controlDrawer.classList.remove('open');
-        });
-
-        this.restartStoryBtn.addEventListener('click', () => {
-            this.loadLocalDemoStory(this.storySelector.value);
-            this.controlDrawer.classList.remove('open');
-        });
-
-        // Reconnect WS button
-        this.reconnectBtn.addEventListener('click', () => {
-            this.tryConnectWebSocket();
-        });
+        // Reconnect WS button (if present)
+        if (this.reconnectBtn) {
+            this.reconnectBtn.addEventListener('click', () => {
+                this.tryConnectWebSocket();
+            });
+        }
     }
 }
 
