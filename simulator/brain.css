@@ -422,3 +422,116 @@ input[type="text"], input[type="number"] {
     font-weight: 700;
     text-decoration: none;
 }
+
+/* QA Library Cards */
+.qa-card {
+    background: #141a2e;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.qa-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.qa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.qa-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qa-badges {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.qa-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.qa-badge-emotion {
+    background: rgba(236, 72, 153, 0.15);
+    color: #f472b6;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.qa-badge-voice {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.qa-text-bubble {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border-right: 3px solid var(--accent-cyan);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+}
+
+.qa-triggers-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.qa-triggers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.qa-trigger-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+}
+
+.qa-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.qa-audio-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qa-audio-player audio {
+    height: 32px;
+    max-width: 220px;
+}
+

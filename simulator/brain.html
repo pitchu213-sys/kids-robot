@@ -31,6 +31,7 @@
         <!-- Navigation Tabs -->
         <nav class="brain-tabs">
             <button class="tab-btn active" data-tab="live-control">🎮 التحكم المباشر</button>
+            <button class="tab-btn" data-tab="qa-library">📖 مكتبة الأجوبة المسجلة</button>
             <button class="tab-btn" data-tab="gemini-ai">🤖 ذكاء وصوت Google Gemini</button>
             <button class="tab-btn" data-tab="stories">📚 القصص والمغامرات</button>
             <button class="tab-btn" data-tab="child-profile">👶 بيانات واهتمامات الطفل</button>
@@ -133,6 +134,35 @@
                     </div>
                 </div>
 
+            </section>
+
+            <!-- TAB: CUSTOM QA LIBRARY -->
+            <section class="tab-pane" id="tab-qa-library">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+                        <div>
+                            <h2>📖 مكتبة الردود والأجوبة المعتمدة (أصوات حقيقية مسجلة 🎙️)</h2>
+                            <p class="card-desc">ردود جاهزة مسجلة بصوت كرتوني ممتع تجيب على الطفل في أجزاء من الثانية (0 ثانية تأخير) مع تحريك تعبيرات العيون وتناسق ألوان الإضاءة.</p>
+                        </div>
+                        <button class="btn-primary" id="refreshQABtn" style="font-size:0.85rem; padding:8px 16px;">🔄 تحديث المكتبة</button>
+                    </div>
+
+                    <!-- Entries Grid Container -->
+                    <div id="qaCardsContainer" class="qa-grid" style="display:flex; flex-direction:column; gap:14px; margin-top:16px;">
+                        <!-- Injected via JavaScript from qa_library.json -->
+                    </div>
+
+                    <!-- Live Intent/Trigger Tester -->
+                    <div style="margin-top:24px; padding:18px; background:rgba(0,0,0,0.3); border-radius:12px; border:1px dashed rgba(255,255,255,0.18);">
+                        <h3 style="font-size:1.05rem; color:#38bdf8; margin-bottom:6px;">🧪 تجربة واختبار فهم الروبوت لكلام الطفل:</h3>
+                        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:12px;">اكتب عبارة قد يقولها الطفل بصوته، وشاهد كيف يختار الروبوت الرد المسجل فوراً وينطقه مباشرة:</p>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="testQATriggerInput" placeholder="مثال: صباح الخير يا روبي أو أحبك كثيراً" style="flex:1;">
+                            <button class="btn-primary" id="testQAMatchBtn">🔍 فحص وتشغيل الرد فوراً</button>
+                        </div>
+                        <div id="testQAResult" style="margin-top:12px; font-size:0.9rem; min-height:24px;"></div>
+                    </div>
+                </div>
             </section>
 
             <!-- TAB 2: GOOGLE GEMINI AI SETTINGS & VOICE -->
@@ -274,6 +304,6 @@
     </div>
 
     <!-- Cache Buster to ensure browser loads latest code immediately -->
-    <script src="brain.js?v=3.9.5"></script>
+    <script src="brain.js?v=4.1.0"></script>
 </body>
 </html>

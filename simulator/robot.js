@@ -64,6 +64,9 @@ class RobotSimulator {
         this.storyIndex = 0;
         this.waitingForAction = null; // 'touch', 'voice', null
 
+        // QA Library State (Curated Q&A with recorded cartoon voice)
+        this.qaLibrary = [];
+
         // Cross-tab / Multi-device Sync Bus with Robot Brain
         this.bus = new BroadcastChannel('kids_robot_bus');
         this.setupBusListener();
@@ -104,6 +107,13 @@ class RobotSimulator {
                 } else if (data.text) {
                     this.speakArabic(data.text);
                 }
+            } else if (data.event === 'PLAY_QA_ENTRY') {
+                const item = (this.qaLibrary || []).find(q => q.id === data.id);
+                if (item) {
+                    this.playQAResponse(item);
+                }
+            } else if (data.event === 'RELOAD_QA_LIBRARY') {
+                this.loadQaLibrary();
             } else if (data.event === 'START_STORY') {
                 this.loadLocalDemoStory(data.story_id);
             } else if (data.event === 'BRAIN_HELLO') {
@@ -118,6 +128,7 @@ class RobotSimulator {
         this.startLedAnimation();
         this.initAudioContext();
         this.initSpeechRecognition();
+        this.loadQaLibrary();
         this.setupEvents();
         this.loadLocalDemoStory('space');
         this.tryConnectWebSocket();
@@ -556,6 +567,89 @@ class RobotSimulator {
         }
     }
 
+    // --- 4.5. CUSTOM QA LIBRARY (0-LATENCY HUMAN CARTOON VOICE) ---
+    async loadQaLibrary() {
+        try {
+            const customQA = localStorage.getItem('kids_robot_qa_library');
+            if (customQA) {
+                this.qaLibrary = JSON.parse(customQA);
+                console.log('Robot loaded QA Library from localStorage:', this.qaLibrary.length);
+                return;
+            }
+
+            const res = await fetch('qa_library.json?v=' + Date.now());
+            if (res.ok) {
+                this.qaLibrary = await res.json();
+                console.log('Robot loaded QA Library from qa_library.json:', this.qaLibrary.length);
+            }
+        } catch (e) {
+            console.warn('Could not load QA library in Robot:', e);
+        }
+    }
+
+    normalizeArabic(text) {
+        if (!text) return '';
+        return text
+            .toLowerCase()
+            .replace(/[\u064B-\u065F\u0670]/g, '') // remove tashkeel
+            .replace(/[إأآا]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/ى/g, 'ي')
+            .replace(/[؟?.,!،؛:]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    findMatchingQA(transcript) {
+        if (!this.qaLibrary || !this.qaLibrary.length) return null;
+        const normInput = this.normalizeArabic(transcript);
+        if (!normInput) return null;
+
+        for (const item of this.qaLibrary) {
+            if (!item.triggers) continue;
+            for (const trig of item.triggers) {
+                const normTrig = this.normalizeArabic(trig);
+                if (normTrig && (normInput === normTrig || normInput.includes(normTrig) || normTrig.includes(normInput))) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    playQAResponse(qaItem) {
+        console.log('Playing QA Library response:', qaItem.title);
+        this.storyText.innerText = qaItem.response_text;
+        
+        const emotion = qaItem.emotion || 'happy';
+        this.setEmotion(emotion);
+
+        if (qaItem.led) {
+            this.setLedPattern(qaItem.led.pattern || 'spin', qaItem.led.color || '#ffcf00');
+        }
+
+        const onDone = () => {
+            this.setEmotion('happy');
+            this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
+        };
+
+        if (qaItem.audio) {
+            this.playAudioFile(qaItem.audio, onDone, qaItem.response_text);
+        } else {
+            this.speakArabic(qaItem.response_text, onDone);
+        }
+
+        if (this.bus) {
+            this.bus.postMessage({
+                event: 'ROBOT_REPLIED',
+                reply: qaItem.response_text,
+                source: 'qa_library',
+                title: qaItem.title,
+                audio: qaItem.audio
+            });
+        }
+    }
+
     async onChildSpeechHeard(transcript) {
         // Broadcast to Parent Brain Dashboard
         if (this.bus) {
@@ -573,7 +667,14 @@ class RobotSimulator {
             return;
         }
 
-        // Full AI Conversational Response with Gemini
+        // TIER 1: Check Custom Q&A Library (0 latency, high quality recorded voice)
+        const matchedQA = this.findMatchingQA(transcript);
+        if (matchedQA) {
+            this.playQAResponse(matchedQA);
+            return;
+        }
+
+        // TIER 2: Full AI Conversational Response with Gemini
         await this.askGeminiAndReply(transcript);
     }
 

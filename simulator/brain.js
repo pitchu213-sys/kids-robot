@@ -29,6 +29,9 @@ class RobotBrain {
         // Cross-tab / Cross-window Real-time Sync Bus
         this.channel = new BroadcastChannel('kids_robot_bus');
         
+        // QA Library State
+        this.qaLibrary = [];
+
         // WebSocket for Backend / Remote ESP32
         this.ws = null;
         this.serverUrl = 'ws://localhost:8000/ws/robot';
@@ -39,6 +42,7 @@ class RobotBrain {
     init() {
         this.setupTabs();
         this.setupLiveControls();
+        this.setupQALibrary();
         this.setupGeminiAI();
         this.setupStories();
         this.setupChildProfile();
@@ -132,6 +136,183 @@ class RobotBrain {
                 });
                 this.logActivity(`💡 تغيير إضاءة LED إلى: ${pattern}`);
             });
+        });
+    }
+
+    // --- 2.5. CUSTOM QA LIBRARY MANAGEMENT ---
+    async setupQALibrary() {
+        this.qaCardsContainer = document.getElementById('qaCardsContainer');
+        this.refreshQABtn = document.getElementById('refreshQABtn');
+        this.testQAMatchBtn = document.getElementById('testQAMatchBtn');
+        this.testQATriggerInput = document.getElementById('testQATriggerInput');
+        this.testQAResult = document.getElementById('testQAResult');
+
+        if (this.refreshQABtn) {
+            this.refreshQABtn.addEventListener('click', () => {
+                this.loadQALibrary();
+            });
+        }
+
+        if (this.testQAMatchBtn && this.testQATriggerInput) {
+            this.testQAMatchBtn.addEventListener('click', () => {
+                this.testQAMatch();
+            });
+            this.testQATriggerInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.testQAMatch();
+            });
+        }
+
+        await this.loadQALibrary();
+    }
+
+    normalizeArabic(text) {
+        if (!text) return '';
+        return text
+            .toLowerCase()
+            .replace(/[\u064B-\u065F\u0670]/g, '') // remove diacritics / tashkeel
+            .replace(/[إأآا]/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/ى/g, 'ي')
+            .replace(/[؟?.,!،؛:]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    findMatchingQA(transcript) {
+        if (!this.qaLibrary || !this.qaLibrary.length) return null;
+        const normInput = this.normalizeArabic(transcript);
+        if (!normInput) return null;
+
+        for (const item of this.qaLibrary) {
+            if (!item.triggers) continue;
+            for (const trig of item.triggers) {
+                const normTrig = this.normalizeArabic(trig);
+                if (normTrig && (normInput === normTrig || normInput.includes(normTrig) || normTrig.includes(normInput))) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    testQAMatch() {
+        const val = this.testQATriggerInput?.value.trim();
+        if (!val) {
+            if (this.testQAResult) this.testQAResult.innerHTML = `<span style="color:#ef4444;">يرجى كتابة جملة لاختبارها</span>`;
+            return;
+        }
+
+        const match = this.findMatchingQA(val);
+        if (match) {
+            if (this.testQAResult) {
+                this.testQAResult.innerHTML = `
+                    <div style="background:rgba(16,185,129,0.15); border:1px solid #10b981; border-radius:8px; padding:10px; color:#34d399;">
+                        ✅ <strong>تمت المطابقة بنجاح!</strong> الرد المحدد: <em>"${match.response_text}"</em>
+                        <button class="btn-primary" style="margin-right:10px; padding:4px 10px; font-size:0.8rem;" onclick="window.brain.triggerQAOnRobot('${match.id}')">🚀 تشغيل الآن على الروبوت</button>
+                    </div>
+                `;
+            }
+            this.triggerQAOnRobot(match.id);
+        } else {
+            if (this.testQAResult) {
+                this.testQAResult.innerHTML = `
+                    <div style="background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:8px; padding:10px; color:#f87171;">
+                        ℹ️ لم يتم العثور على رد مباشر في المكتبة. في هذه الحالة، سينتقل الروبوت فوراً لتوليد إجابة ذكية عبر <strong>Google Gemini</strong>.
+                    </div>
+                `;
+            }
+        }
+    }
+
+    triggerQAOnRobot(id) {
+        const item = (this.qaLibrary || []).find(q => q.id === id);
+        if (item) {
+            this.broadcastCommand({
+                event: 'PLAY_QA_ENTRY',
+                id: item.id
+            });
+            this.logActivity(`📢 تشغيل الرد المسجل: "${item.title}" على الروبوت`);
+        }
+    }
+
+    async loadQALibrary() {
+        try {
+            const res = await fetch('qa_library.json?v=' + Date.now());
+            if (res.ok) {
+                this.qaLibrary = await res.json();
+                this.renderQACards();
+                this.logActivity(`📚 تم تحميل مكتبة الردود (${this.qaLibrary.length} ردود معتمدة)`);
+            }
+        } catch (e) {
+            console.warn('Failed to load QA library:', e);
+        }
+    }
+
+    renderQACards() {
+        if (!this.qaCardsContainer) return;
+        this.qaCardsContainer.innerHTML = '';
+
+        if (!this.qaLibrary || !this.qaLibrary.length) {
+            this.qaCardsContainer.innerHTML = '<p style="color:#94a3b8;">لا توجد ردود مسجلة بعد في المكتبة.</p>';
+            return;
+        }
+
+        const emotionLabels = {
+            happy: '😊 فرحان',
+            wonder: '🤩 مندهش',
+            love: '❤️ حب وتشجيع',
+            curious: '🤔 فضولي',
+            sleepy: '😴 ناعس'
+        };
+
+        this.qaLibrary.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'qa-card';
+
+            const triggersHtml = (item.triggers || []).map(t => `<span class="qa-trigger-pill">${t}</span>`).join('');
+            const emotionText = emotionLabels[item.emotion] || item.emotion;
+
+            card.innerHTML = `
+                <div class="qa-header">
+                    <div class="qa-title">
+                        <span>🎙️</span>
+                        <span>${item.title || item.id}</span>
+                    </div>
+                    <div class="qa-badges">
+                        <span class="qa-badge qa-badge-emotion">${emotionText}</span>
+                        <span class="qa-badge qa-badge-voice">صوت بشري مسجل 🎧</span>
+                    </div>
+                </div>
+
+                <div class="qa-text-bubble">
+                    ${item.response_text}
+                </div>
+
+                <div>
+                    <div class="qa-triggers-label">الكلمات والجمل المفتاحية التي ينطق بها الطفل:</div>
+                    <div class="qa-triggers-list">
+                        ${triggersHtml}
+                    </div>
+                </div>
+
+                <div class="qa-actions">
+                    <div class="qa-audio-player">
+                        <audio controls preload="none" src="${item.audio}"></audio>
+                    </div>
+                    <button class="btn-primary qa-play-btn" data-id="${item.id}" style="font-size:0.85rem; padding:6px 14px;">
+                        🚀 تشغيل على شاشة الروبوت
+                    </button>
+                </div>
+            `;
+
+            const playBtn = card.querySelector('.qa-play-btn');
+            if (playBtn) {
+                playBtn.addEventListener('click', () => {
+                    this.triggerQAOnRobot(item.id);
+                });
+            }
+
+            this.qaCardsContainer.appendChild(card);
         });
     }
 
@@ -607,19 +788,9 @@ class RobotBrain {
                 this.logActivity('👉 الطفل لمس رأس الروبوت الآن!', 'event');
             } else if (data.event === 'CHILD_SPOKE') {
                 this.logActivity(`🎤 الطفل قال للروبوت: "${data.transcript}"`, 'event');
-
-                // If Gemini key is set, automatically respond to the child with Gemini Voice!
-                const key = this.geminiApiKeyInput?.value.trim() || localStorage.getItem('kids_robot_gemini_key');
-                if (key && data.transcript) {
-                    this.logActivity('🤖 Gemini يجيب على صوت الطفل بصوته البشري...');
-                    try {
-                        await this.requestGeminiVoice(data.transcript, false);
-                    } catch (e) {
-                        console.error('Auto Gemini reply error:', e);
-                    }
-                }
             } else if (data.event === 'ROBOT_REPLIED') {
-                this.logActivity(`🤖 الروبوت أجاب الطفل: "${data.reply}"`);
+                const badge = data.source === 'qa_library' ? '🎙️ [مكتبة الردود المسجلة]' : '⚡ [ذكاء Gemini]';
+                this.logActivity(`🤖 الروبوت أجاب: "${data.reply}" ${badge}`);
             } else if (data.event === 'ROBOT_FACE_ONLINE') {
                 this.statusDot.style.background = '#10b981';
                 this.statusText.innerText = 'وجه الروبوت متصل ونشط 🤖';
