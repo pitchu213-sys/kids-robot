@@ -1,6 +1,7 @@
 /**
  * Robot Brain - Remote Controller & Content Manager
  * Syncs seamlessly with the Robot Face (index.html) and ESP32 via BroadcastChannel & WebSockets
+ * Features: Google Gemini AI Voice Integration (Puck, Aoede, Kore, Fenrir, Charon)
  */
 
 class RobotBrain {
@@ -15,6 +16,16 @@ class RobotBrain {
         this.clearLogsBtn = document.getElementById('clearLogsBtn');
         this.childProfileForm = document.getElementById('childProfileForm');
 
+        // Gemini AI Elements
+        this.geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+        this.saveGeminiKeyBtn = document.getElementById('saveGeminiKeyBtn');
+        this.testGeminiVoiceBtn = document.getElementById('testGeminiVoiceBtn');
+        this.geminiStatusBadge = document.getElementById('geminiStatusBadge');
+        this.geminiVoiceSelect = document.getElementById('geminiVoiceSelect');
+        this.geminiPromptInput = document.getElementById('geminiPromptInput');
+        this.sendToGeminiBtn = document.getElementById('sendToGeminiBtn');
+        this.geminiSystemPrompt = document.getElementById('geminiSystemPrompt');
+
         // Cross-tab / Cross-window Real-time Sync Bus
         this.channel = new BroadcastChannel('kids_robot_bus');
         
@@ -28,6 +39,7 @@ class RobotBrain {
     init() {
         this.setupTabs();
         this.setupLiveControls();
+        this.setupGeminiAI();
         this.setupStories();
         this.setupChildProfile();
         this.setupLogs();
@@ -123,7 +135,233 @@ class RobotBrain {
         });
     }
 
-    // --- 3. STORY ORCHESTRATION ---
+    // --- 3. GOOGLE GEMINI AI VOICE & CHAT INTEGRATION ---
+    setupGeminiAI() {
+        // Load saved API key & settings
+        const savedKey = localStorage.getItem('kids_robot_gemini_key') || '';
+        const savedVoice = localStorage.getItem('kids_robot_gemini_voice') || 'Puck';
+        const savedPrompt = localStorage.getItem('kids_robot_gemini_prompt');
+
+        if (savedKey) {
+            this.geminiApiKeyInput.value = savedKey;
+            this.geminiStatusBadge.innerHTML = '🟢 المفتاح محفوظ ومفعّل';
+            this.geminiStatusBadge.style.color = '#10b981';
+        }
+
+        if (savedVoice) this.geminiVoiceSelect.value = savedVoice;
+        if (savedPrompt) this.geminiSystemPrompt.value = savedPrompt;
+
+        // Save Key Button
+        this.saveGeminiKeyBtn.addEventListener('click', () => {
+            const key = this.geminiApiKeyInput.value.trim();
+            if (!key) {
+                alert('الرجاء لصق مفتاح Gemini API أولاً!');
+                return;
+            }
+            localStorage.setItem('kids_robot_gemini_key', key);
+            localStorage.setItem('kids_robot_gemini_voice', this.geminiVoiceSelect.value);
+            localStorage.setItem('kids_robot_gemini_prompt', this.geminiSystemPrompt.value);
+
+            this.geminiStatusBadge.innerHTML = '🟢 تم حفظ المفتاح بنجاح!';
+            this.geminiStatusBadge.style.color = '#10b981';
+            this.logActivity('💾 تم حفظ مفتاح Google Gemini وتحديث الإعدادات');
+            alert('تم حفظ مفتاح Gemini وتفعيل الصوت البشري الذكي بنجاح! 🎉');
+        });
+
+        // Test Voice Button
+        this.testGeminiVoiceBtn.addEventListener('click', async () => {
+            const key = this.geminiApiKeyInput.value.trim();
+            if (!key) {
+                alert('الرجاء إدخال وحفظ مفتاح Gemini أولاً لتجربة الصوت!');
+                return;
+            }
+            this.logActivity('⏳ جاري طلب صوت Gemini التجريبي من Google...');
+            this.testGeminiVoiceBtn.innerText = '⏳ جاري التوليد...';
+
+            try {
+                const testMsg = "مرحباً يا بطل! أنا روبوتك الذكي روبي، صوتي الجديد جميل ومرح، هل أنت جاهز للعب معي؟";
+                await this.requestGeminiVoice(testMsg, true);
+                this.logActivity('🔊 تم استلام صوت Gemini بنجاح وبثه للروبوت!');
+            } catch (err) {
+                console.error('Gemini test error:', err);
+                alert(`خطأ في استدعاء صوت Gemini: ${err.message}\nتأكد من صحة المفتاح.`);
+                this.logActivity(`❌ خطأ في صوت Gemini: ${err.message}`, 'error');
+            } finally {
+                this.testGeminiVoiceBtn.innerText = '🔊 اختبار الصوت';
+            }
+        });
+
+        // Send Custom Prompt to Gemini
+        this.sendToGeminiBtn.addEventListener('click', async () => {
+            const prompt = this.geminiPromptInput.value.trim();
+            if (!prompt) {
+                alert('الرجاء كتابة سؤال أو جملة لـ Gemini!');
+                return;
+            }
+
+            this.logActivity(`❓ سؤال إلى Gemini: "${prompt}"`);
+            this.sendToGeminiBtn.innerText = '⏳ يفكر ويجيب...';
+
+            try {
+                await this.requestGeminiVoice(prompt, false);
+                this.geminiPromptInput.value = '';
+            } catch (err) {
+                alert(`خطأ في Gemini: ${err.message}`);
+                this.logActivity(`❌ خطأ: ${err.message}`, 'error');
+            } finally {
+                this.sendToGeminiBtn.innerText = '🗣️ إرسال وسماع الرد';
+            }
+        });
+    }
+
+    /**
+     * Calls Google Gemini 2.0 Flash with native conversational AUDIO modality
+     */
+    async requestGeminiVoice(userPrompt, isDirectTest = false) {
+        const apiKey = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
+        if (!apiKey) throw new Error('مفتاح Gemini API غير موجود');
+
+        const voiceName = this.geminiVoiceSelect.value || 'Puck';
+        const systemPrompt = this.geminiSystemPrompt.value.trim();
+
+        // Target: Gemini 2.0 Flash with native Multimodal Audio Response
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const payload = {
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: userPrompt }]
+                }
+            ],
+            generationConfig: {
+                responseModalities: ["AUDIO", "TEXT"],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: {
+                            voiceName: voiceName
+                        }
+                    }
+                }
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        if (!candidate) throw new Error('لم يرجع Gemini أي رد');
+
+        let audioBase64 = null;
+        let mimeType = 'audio/wav';
+        let textReply = '';
+
+        for (const part of candidate.content?.parts || []) {
+            if (part.text) {
+                textReply += part.text;
+            }
+            if (part.inlineData) {
+                audioBase64 = part.inlineData.data;
+                mimeType = part.inlineData.mimeType || 'audio/wav';
+            }
+        }
+
+        if (!textReply && isDirectTest) {
+            textReply = userPrompt;
+        }
+
+        this.logActivity(`🤖 رد Gemini: "${textReply}"`);
+
+        // If PCM audio returned (audio/pcm;rate=24000), wrap with WAV header
+        let finalAudioDataUrl = null;
+        if (audioBase64) {
+            if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
+                finalAudioDataUrl = this.pcmBase64ToWavDataUrl(audioBase64, 24000);
+            } else {
+                finalAudioDataUrl = `data:${mimeType};base64,${audioBase64}`;
+            }
+        }
+
+        // Broadcast to Robot Face!
+        this.broadcastCommand({
+            event: 'PLAY_GEMINI_AUDIO',
+            audioUrl: finalAudioDataUrl,
+            text: textReply,
+            face: 'happy',
+            led: { pattern: 'rainbow' }
+        });
+
+        return { text: textReply, audioUrl: finalAudioDataUrl };
+    }
+
+    /**
+     * Converts raw 24kHz 16-bit Mono PCM Base64 to a playable WAV Data URL
+     */
+    pcmBase64ToWavDataUrl(base64Pcm, sampleRate = 24000) {
+        const binaryString = atob(base64Pcm);
+        const len = binaryString.length;
+        const pcmBytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            pcmBytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Build 44-byte WAV header
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+        const blockAlign = numChannels * (bitsPerSample / 8);
+        const dataLength = pcmBytes.length;
+        const headerLength = 44;
+        const wavBuffer = new ArrayBuffer(headerLength + dataLength);
+        const view = new DataView(wavBuffer);
+
+        // "RIFF" chunk descriptor
+        this.writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataLength, true);
+        this.writeString(view, 8, 'WAVE');
+
+        // "fmt " sub-chunk
+        this.writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // Subchunk1Size
+        view.setUint16(20, 1, true);  // AudioFormat (1 = PCM)
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+
+        // "data" sub-chunk
+        this.writeString(view, 36, 'data');
+        view.setUint32(40, dataLength, true);
+
+        // Copy PCM samples
+        const wavBytes = new Uint8Array(wavBuffer);
+        wavBytes.set(pcmBytes, 44);
+
+        // Convert to Blob and Data URL
+        const blob = new Blob([wavBytes], { type: 'audio/wav' });
+        return URL.createObjectURL(blob);
+    }
+
+    writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    // --- 4. STORY ORCHESTRATION ---
     setupStories() {
         const spaceBtn = document.getElementById('launchSpaceStory');
         const animalsBtn = document.getElementById('launchAnimalsStory');
@@ -149,9 +387,8 @@ class RobotBrain {
         }
     }
 
-    // --- 4. CHILD PROFILE & PERSONALIZATION ---
+    // --- 5. CHILD PROFILE & PERSONALIZATION ---
     setupChildProfile() {
-        // Load saved profile
         const saved = localStorage.getItem('kids_robot_child_profile');
         if (saved) {
             try {
@@ -183,7 +420,7 @@ class RobotBrain {
         });
     }
 
-    // --- 5. LOGS & TELEMETRY ---
+    // --- 6. LOGS & TELEMETRY ---
     setupLogs() {
         this.clearLogsBtn.addEventListener('click', () => {
             this.logStream.innerHTML = '';
@@ -201,9 +438,9 @@ class RobotBrain {
         this.logStream.prepend(item);
     }
 
-    // --- 6. REAL-TIME COMMUNICATION (BROADCAST & WEBSOCKET) ---
+    // --- 7. REAL-TIME COMMUNICATION (BROADCAST & WEBSOCKET) ---
     setupSyncBus() {
-        this.channel.onmessage = (event) => {
+        this.channel.onmessage = async (event) => {
             const data = event.data;
             if (!data) return;
 
@@ -212,6 +449,17 @@ class RobotBrain {
                 this.logActivity('👉 الطفل لمس رأس الروبوت الآن!', 'event');
             } else if (data.event === 'CHILD_SPOKE') {
                 this.logActivity(`🎤 الطفل قال للروبوت: "${data.transcript}"`, 'event');
+
+                // If Gemini key is set, automatically respond to the child with Gemini Voice!
+                const key = this.geminiApiKeyInput?.value.trim() || localStorage.getItem('kids_robot_gemini_key');
+                if (key && data.transcript) {
+                    this.logActivity('🤖 Gemini يجيب على صوت الطفل بصوته البشري...');
+                    try {
+                        await this.requestGeminiVoice(data.transcript, false);
+                    } catch (e) {
+                        console.error('Auto Gemini reply error:', e);
+                    }
+                }
             } else if (data.event === 'ROBOT_FACE_ONLINE') {
                 this.statusDot.style.background = '#10b981';
                 this.statusText.innerText = 'وجه الروبوت متصل ونشط 🤖';
@@ -221,10 +469,7 @@ class RobotBrain {
     }
 
     broadcastCommand(payload) {
-        // 1. Send via local BroadcastChannel
         this.channel.postMessage(payload);
-
-        // 2. Send via WebSocket if connected
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(payload));
         }

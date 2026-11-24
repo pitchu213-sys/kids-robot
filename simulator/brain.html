@@ -31,6 +31,7 @@
         <!-- Navigation Tabs -->
         <nav class="brain-tabs">
             <button class="tab-btn active" data-tab="live-control">🎮 التحكم المباشر</button>
+            <button class="tab-btn" data-tab="gemini-ai">🤖 ذكاء وصوت Google Gemini</button>
             <button class="tab-btn" data-tab="stories">📚 القصص والمغامرات</button>
             <button class="tab-btn" data-tab="child-profile">👶 بيانات واهتمامات الطفل</button>
             <button class="tab-btn" data-tab="logs">📊 سجل تفاعل الطفل</button>
@@ -134,7 +135,58 @@
 
             </section>
 
-            <!-- TAB 2: STORY & SCENARIOS -->
+            <!-- TAB 2: GOOGLE GEMINI AI SETTINGS & VOICE -->
+            <section class="tab-pane" id="tab-gemini-ai">
+                <div class="card highlight-card">
+                    <h2>🤖 إعدادات ذكاء وصوت Google Gemini (مجاني تماماً)</h2>
+                    <p class="card-desc">اربط روبوتك بأحدث محرك ذكاء اصطناعي صوتي من Google ليتحدث بنفس صوت وأسلوب Gemini Live البشري والممتع:</p>
+
+                    <!-- API Key Box -->
+                    <div class="api-key-box" style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+                        <label for="geminiApiKeyInput" style="font-weight:700; color:#cbd5e1;">مفتاح Gemini API Key:</label>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <input type="password" id="geminiApiKeyInput" placeholder="الصق المفتاح هنا (يبدأ بـ AIzaSy...)" style="flex:1; min-width:240px;">
+                            <button class="btn-primary" id="saveGeminiKeyBtn">💾 حفظ المفتاح</button>
+                            <button class="btn-secondary" id="testGeminiVoiceBtn">🔊 اختبار الصوت</button>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <span id="geminiStatusBadge" style="font-size:0.85rem; color:#94a3b8;">حالة المفتاح: لم يتم الحفظ بعد</span>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe; font-size:0.85rem; font-weight:700; text-decoration:none;">
+                                🔑 انقر هنا للحصول على مفتاح مجاني من Google AI Studio في ثوانٍ
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Voice Persona Selector -->
+                    <div class="control-group" style="margin-bottom:16px;">
+                        <label for="geminiVoiceSelect" style="font-weight:700; color:#cbd5e1;">اختر نبرة صوت Gemini المفضلة:</label>
+                        <select id="geminiVoiceSelect" style="width:100%;">
+                            <option value="Puck">🌟 Puck (صوت كرتوني مرح، حيوي، وودود جداً - الأفضل للأطفال)</option>
+                            <option value="Aoede">🎵 Aoede (صوت نسائي دافئ، حنون، ونغمي مثل راوية القصص)</option>
+                            <option value="Kore">🌸 Kore (صوت هادئ، لطيف ومريح)</option>
+                            <option value="Fenrir">⚡ Fenrir (صوت شجاع ومتحمس للأبطال)</option>
+                            <option value="Charon">🧙‍♂️ Charon (صوت حكيم وناضج)</option>
+                        </select>
+                    </div>
+
+                    <!-- Live Gemini Chat Test -->
+                    <div class="control-group" style="margin-bottom:16px;">
+                        <label for="geminiPromptInput" style="font-weight:700; color:#cbd5e1;">اسأل Gemini وسيجيب الروبوت بصوته فوراً:</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="geminiPromptInput" placeholder="مثال: مرحباً روبي، كيف حالك اليوم وماذا سنلعب؟" style="flex:1;">
+                            <button class="btn-primary" id="sendToGeminiBtn">🗣️ إرسال وسماع الرد</button>
+                        </div>
+                    </div>
+
+                    <!-- Robot Personality Prompt -->
+                    <div class="control-group">
+                        <label for="geminiSystemPrompt" style="font-weight:700; color:#cbd5e1;">شخصية وتوجيهات الروبوت (System Instructions):</label>
+                        <textarea id="geminiSystemPrompt" rows="3" style="width:100%; font-size:0.88rem;">أنت روبوت أطفال ذكي ومحبوب اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. إجاباتك يجب أن تكون قصيرة ومشوقة (جملتان أو ثلاث كحد أقصى) ومناسبة لعمر الأطفال، مع لمسة كرتونية لطيفة وتشجيعية.</textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STORY & SCENARIOS -->
             <section class="tab-pane" id="tab-stories">
                 <div class="card">
                     <h2>📚 تشغيل وإدارة القصص التفاعلية</h2>
@@ -162,7 +214,7 @@
                 </div>
             </section>
 
-            <!-- TAB 3: CHILD PROFILE & PERSONALIZATION -->
+            <!-- TAB 4: CHILD PROFILE & PERSONALIZATION -->
             <section class="tab-pane" id="tab-child-profile">
                 <div class="card">
                     <h2>👶 بيانات واهتمامات طفلك (تخصيص الذكاء الاصطناعي)</h2>
@@ -194,7 +246,7 @@
                 </div>
             </section>
 
-            <!-- TAB 4: ACTIVITY LOGS & TELEMETRY -->
+            <!-- TAB 5: ACTIVITY LOGS & TELEMETRY -->
             <section class="tab-pane" id="tab-logs">
                 <div class="card">
                     <div class="logs-header">

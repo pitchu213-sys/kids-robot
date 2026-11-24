@@ -92,6 +92,18 @@ class RobotSimulator {
                 this.setEmotion(data.face);
             } else if (data.event === 'SET_LED') {
                 this.setLedPattern(data.led.pattern, data.led.color);
+            } else if (data.event === 'PLAY_GEMINI_AUDIO') {
+                if (data.face) this.setEmotion(data.face);
+                if (data.led) this.setLedPattern(data.led.pattern, data.led.color || '#00f2fe');
+                if (data.text) this.storyText.innerText = data.text;
+
+                if (data.audioUrl) {
+                    this.playAudioFile(data.audioUrl, () => {
+                        this.setEmotion('happy');
+                    });
+                } else if (data.text) {
+                    this.speakArabic(data.text);
+                }
             } else if (data.event === 'START_STORY') {
                 this.loadLocalDemoStory(data.story_id);
             } else if (data.event === 'BRAIN_HELLO') {
