@@ -150,7 +150,7 @@
                             <button class="btn-secondary" id="testGeminiVoiceBtn">🔊 اختبار الصوت</button>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                            <span id="geminiStatusBadge" style="font-size:0.85rem; color:#94a3b8;">حالة المفتاح: لم يتم الحفظ بعد</span>
+                            <span id="geminiStatusBadge" style="font-size:0.85rem; color:#94a3b8;">المحرك النشط: Google Gemini 3.8 Flash ⚡</span>
                             <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00f2fe; font-size:0.85rem; font-weight:700; text-decoration:none;">
                                 🔑 انقر هنا للحصول على مفتاح مجاني من Google AI Studio في ثوانٍ
                             </a>
@@ -273,6 +273,7 @@
 
     </div>
 
-    <script src="brain.js"></script>
+    <!-- Cache Buster to ensure browser loads latest code immediately -->
+    <script src="brain.js?v=3.8.1"></script>
 </body>
 </html>
