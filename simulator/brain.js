@@ -183,22 +183,31 @@ class RobotBrain {
 
         // Test Voice Button
         this.testGeminiVoiceBtn.addEventListener('click', async () => {
-            const key = this.geminiApiKeyInput.value.trim();
+            const key = this.geminiApiKeyInput.value.trim() || localStorage.getItem('kids_robot_gemini_key');
             if (!key) {
                 alert('الرجاء إدخال وحفظ مفتاح Gemini أولاً لتجربة الصوت!');
                 return;
             }
-            this.logActivity('⏳ جاري طلب صوت Gemini التجريبي من Google...');
+            this.logActivity('⏳ جاري طلب واختبار الصوت من Google...');
             this.testGeminiVoiceBtn.innerText = '⏳ جاري التوليد...';
 
             try {
-                const testMsg = "مرحباً يا بطل! أنا روبوتك الذكي روبي، صوتي الجديد جميل ومرح، هل أنت جاهز للعب معي؟";
-                await this.requestGeminiVoice(testMsg, true);
-                this.logActivity('🔊 تم استلام صوت Gemini بنجاح وبثه للروبوت!');
+                const testMsg = "مرحباً يا بطل! أنا روبوتك الذكي، هل أنت مستعد لنبدأ مغامرتنا؟";
+                const result = await this.requestGeminiVoice(testMsg, true);
+                this.logActivity(`🔊 تم بنجاح! الروبوت يتكلم: "${result.text}"`);
             } catch (err) {
                 console.error('Gemini test error:', err);
-                alert(`خطأ في استدعاء صوت Gemini: ${err.message}\nتأكد من صحة المفتاح.`);
-                this.logActivity(`❌ خطأ في صوت Gemini: ${err.message}`, 'error');
+                this.logActivity(`❌ تعذر الاتصال بـ Gemini (${err.message})، جاري تشغيل الصوت التجريبي المحلي...`, 'warn');
+                // Immediate local audio test so user ALWAYS hears sound
+                const localAudioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent('مرحباً يا بطل! أنا روبوتك الذكي!');
+                this.playAudioDirectly(localAudioUrl, 'مرحباً يا بطل! أنا روبوتك الذكي!');
+                this.broadcastCommand({
+                    event: 'PLAY_GEMINI_AUDIO',
+                    audioUrl: localAudioUrl,
+                    text: 'مرحباً يا بطل! أنا روبوتك الذكي!',
+                    face: 'happy',
+                    led: { pattern: 'spin', color: '#00f2fe' }
+                });
             } finally {
                 this.testGeminiVoiceBtn.innerText = '🔊 اختبار الصوت';
             }
@@ -369,6 +378,7 @@ class RobotBrain {
 
                 this.logActivity(`🤖 رد الذكاء الاصطناعي (${modelName}): "${textReply}"`);
 
+                // If no native audio base64, create neural audio URL directly
                 let finalAudioDataUrl = null;
                 if (audioBase64) {
                     if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
@@ -376,25 +386,21 @@ class RobotBrain {
                     } else {
                         finalAudioDataUrl = `data:${mimeType};base64,${audioBase64}`;
                     }
+                } else if (textReply) {
+                    finalAudioDataUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(textReply);
                 }
 
-                // Broadcast to Robot Face
-                if (finalAudioDataUrl) {
-                    this.broadcastCommand({
-                        event: 'PLAY_GEMINI_AUDIO',
-                        audioUrl: finalAudioDataUrl,
-                        text: textReply,
-                        face: 'speaking',
-                        led: { pattern: 'rainbow' }
-                    });
-                } else {
-                    this.broadcastCommand({
-                        event: 'SAY_TEXT',
-                        text: textReply,
-                        face: 'speaking',
-                        led: { pattern: 'spin', color: '#00f2fe' }
-                    });
-                }
+                // 1. Play directly HERE on brain.html so parent hears it immediately
+                this.playAudioDirectly(finalAudioDataUrl, textReply);
+
+                // 2. Broadcast to Robot Face (index.html) so child screen reacts simultaneously
+                this.broadcastCommand({
+                    event: 'PLAY_GEMINI_AUDIO',
+                    audioUrl: finalAudioDataUrl,
+                    text: textReply,
+                    face: 'speaking',
+                    led: { pattern: 'spin', color: '#00f2fe' }
+                });
 
                 return { text: textReply, audioUrl: finalAudioDataUrl, model: modelName };
             } catch (err) {
@@ -404,6 +410,54 @@ class RobotBrain {
         }
 
         throw new Error(lastError ? lastError.message : 'تعذر الاتصال بنماذج Google حالياً.');
+    }
+
+    /**
+     * Plays audio directly inside brain.html for instant test feedback
+     */
+    playAudioDirectly(audioUrl, fallbackText) {
+        if (this.currentPlayingAudio) {
+            try {
+                this.currentPlayingAudio.pause();
+                this.currentPlayingAudio.currentTime = 0;
+            } catch (e) {}
+            this.currentPlayingAudio = null;
+        }
+
+        const doFallback = () => {
+            if (fallbackText) this.speakWebSpeech(fallbackText);
+        };
+
+        if (audioUrl) {
+            try {
+                const audio = new Audio(audioUrl);
+                this.currentPlayingAudio = audio;
+                const p = audio.play();
+                if (p !== undefined) {
+                    p.catch(err => {
+                        console.warn('Direct audio play error:', err);
+                        doFallback();
+                    });
+                }
+            } catch (e) {
+                doFallback();
+            }
+        } else {
+            doFallback();
+        }
+    }
+
+    speakWebSpeech(text) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.lang = 'ar-SA';
+        ut.rate = 0.92;
+        ut.pitch = 1.25;
+        const voices = window.speechSynthesis.getVoices();
+        const ar = voices.find(v => v.lang.startsWith('ar'));
+        if (ar) ut.voice = ar;
+        window.speechSynthesis.speak(ut);
     }
 
     /**
