@@ -577,6 +577,30 @@ class RobotSimulator {
         await this.askGeminiAndReply(transcript);
     }
 
+    async getWorkingGeminiModel(apiKey) {
+        let cached = localStorage.getItem('kids_robot_active_model');
+        if (cached) return cached;
+
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            if (res.ok) {
+                const data = await res.json();
+                const valid = (data.models || [])
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => m.name.replace('models/', ''));
+
+                if (valid.length > 0) {
+                    const flash = valid.find(m => m.includes('flash')) || valid[0];
+                    localStorage.setItem('kids_robot_active_model', flash);
+                    return flash;
+                }
+            }
+        } catch (e) {
+            console.warn('Model list query error:', e);
+        }
+        return 'gemini-1.5-flash';
+    }
+
     async askGeminiAndReply(childText) {
         const apiKey = localStorage.getItem('kids_robot_gemini_key');
         
@@ -586,53 +610,75 @@ class RobotSimulator {
         this.storyText.innerText = `أفكر في إجابة لسؤالك الذكي... 🤔`;
         this.playCuteBeep('happy');
 
-        // Fallback if API key not saved yet
+        // Check if API Key exists
         if (!apiKey) {
             setTimeout(() => {
-                const reply = `يا لك من طفل ذكي وبطل! سؤالك رائع جداً، أنا أحبك كثيراً! 🌟`;
+                const reply = `يا بطل، لم يتم إدخال مفتاح الذكاء الاصطناعي في عقل الروبوت بعد!`;
                 this.storyText.innerText = reply;
-                this.speakArabic(reply, () => {
-                    this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
-                });
+                this.speakArabic(reply);
             }, 800);
             return;
         }
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-            const systemPrompt = localStorage.getItem('kids_robot_gemini_prompt') || 
-                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. إجاباتك يجب أن تكون قصيرة جداً (جملة واحدة فقط أو جملتان كحد أقصى) ومباشرة ومحفزة للطفل.";
+            const primaryModel = await this.getWorkingGeminiModel(apiKey);
+            const candidateModels = [primaryModel, 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.8-flash'];
+            const uniqueModels = [...new Set(candidateModels)];
 
-            // Ultra-fast generation payload with strict maxOutputTokens
+            const systemPrompt = localStorage.getItem('kids_robot_gemini_prompt') || 
+                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. أجب على الطفل بجملة واحدة فقط قصيرة ومشوقة جداً ومحفزة.";
+
+            // Universal bulletproof Gemini payload
             const payload = {
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: 'user', parts: [{ text: childText }] }],
+                contents: [{
+                    parts: [{
+                        text: `${systemPrompt}\n\nسؤال الطفل: ${childText}\nإجابتك السريعة والقصيرة للطفل:`
+                    }]
+                }],
                 generationConfig: {
-                    maxOutputTokens: 50,
+                    maxOutputTokens: 60,
                     temperature: 0.7
                 }
             };
 
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
             let textReply = '';
-            if (res.ok) {
-                const data = await res.json();
-                textReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            let successfulModel = '';
+
+            for (const modelName of uniqueModels) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        textReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                        if (textReply) {
+                            successfulModel = modelName;
+                            localStorage.setItem('kids_robot_active_model', modelName);
+                            break;
+                        }
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        console.warn(`Model ${modelName} failed (${res.status}):`, err?.error?.message);
+                    }
+                } catch (err) {
+                    console.warn(`Request failed for ${modelName}:`, err);
+                }
             }
 
             if (!textReply) {
-                textReply = `أنت طفل مبدع وسؤالك أسعدني كثيراً يا بطل! 🌟`;
+                throw new Error('لم يرجع أي من نماذج Gemini إجابة، يرجى التأكد من صلاحية المفتاح');
             }
 
+            console.log(`Success with Gemini model (${successfulModel}):`, textReply);
             this.storyText.innerText = textReply;
             this.setEmotion('happy');
 
-            // Zero-latency instant local voice synthesis (starts in ~50ms!)
+            // Zero-latency instant local voice synthesis
             this.speakArabic(textReply, () => {
                 this.setEmotion('happy');
                 this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
@@ -640,13 +686,20 @@ class RobotSimulator {
 
             // Log to Parent Dashboard
             if (this.bus) {
-                this.bus.postMessage({ event: 'ROBOT_REPLIED', reply: textReply });
+                this.bus.postMessage({ 
+                    event: 'ROBOT_REPLIED', 
+                    reply: textReply,
+                    model: successfulModel 
+                });
             }
         } catch (e) {
-            console.warn('Gemini chat error:', e);
-            const fallbackReply = `فكرة مدهشة يا بطل! أنت أذكى طفل في العالم! ❤️`;
-            this.storyText.innerText = fallbackReply;
-            this.speakArabic(fallbackReply);
+            console.error('Gemini chat error:', e);
+            const errorMsg = `عذراً يا بطل، واجهت مشكلة في التفكير: ${e.message}`;
+            this.storyText.innerText = errorMsg;
+            this.speakArabic("عذراً يا بطل، حاول أن تسألني مرة أخرى!");
+            if (this.bus) {
+                this.bus.postMessage({ event: 'ROBOT_ERROR', error: e.message });
+            }
         }
     }
 
