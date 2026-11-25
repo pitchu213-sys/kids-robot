@@ -95,8 +95,11 @@
      */
     function buildComposerPrompt(voiceBlocks, childText, childProfile, customSystemPrompt) {
         const blocksCatalog = (voiceBlocks || [])
-            .map(b => `${b.id} [${b.emotion}]: ${b.text}`)
-            .join('\n');
+            .map(b => {
+                const purpose = b.description ? `\nملاءمة اللبنة: ${b.description}` : '';
+                return `${b.id} [${b.role_ar || b.role}; الشعور: ${b.emotion}]${purpose}\nالنص المسجل: ${b.text}`;
+            })
+            .join('\n\n');
 
         let profileHint = '';
         if (childProfile && (childProfile.name || childProfile.interests || childProfile.notes)) {
@@ -111,14 +114,17 @@
 لديك مكتبة من اللبنات الصوتية القصيرة (Voice Blocks) المسجلة بأحاسيس مختلفة:
 ${blocksCatalog}
 
-تعليمات الرد الصارمة (أرجع JSON صالحاً فقط بدون أي نص إضافي):
-1) للمحادثة اليومية، المشاعر، المواساة، التشجيع، القصص، اللعب، أو الروتين:
-اختر 2 إلى 3 لبنات متسلسلة ومتناغمة (افتتاحية -> محتوى -> خاتمة) تعبر عن أروع رد لكلام الطفل، وأرجع:
-{"mode":"blocks","ids":["id1","id2","id3"]}
+تعليمات اختيار الرد (أرجع JSON صالحاً فقط بدون أي نص إضافي):
+افهم معنى كلام الطفل وسياق المحادثة، ثم اقرأ وصف كل لبنة لتقرر مدى ملاءمتها. لا تختر لبنة لمجرد تشابه كلمة، ولا تفرض افتتاحية أو خاتمة إذا لم تضف معنى.
 
-2) فقط إذا سأل الطفل سؤالاً علمياً أو معرفياً محدداً يحتاج معلومة حقيقية غير موجودة في اللبنات (مثل: لماذا السماء زرقاء؟):
-اختر لبنة افتتاحية مناسبة (مثل bridge_smart_q أو open_wow) واكتب جملة إجابة واحدة قصيرة جداً وممتعة للطفل، وأرجع:
-{"mode":"hybrid","opener_id":"bridge_smart_q","text":"إجابتك القصيرة هنا","emotion":"wonder"}
+1) إذا كانت لبنة واحدة أو لبنتان تجيبان عن الطفل أو تتفاعلان معه بوضوح، أرجع:
+{"mode":"blocks","ids":["id1","id2"]}
+
+2) إذا كان السؤال يحتاج معلومة جديدة غير موجودة في النصوص المسجلة، اختر bridge_smart_q فقط إذا كانت تمهيداً مناسباً، واكتب جواباً قصيراً ودقيقاً، أرجع:
+{"mode":"hybrid","opener_id":"bridge_smart_q","text":"جواب مناسب للطفل","emotion":"wonder"}
+
+3) إذا لم تلائم أي لبنة معنى كلام الطفل، لا تجبر الاختيار؛ أرجع رداً طبيعياً قصيراً:
+{"mode":"text","text":"رد طبيعي مناسب للطفل","emotion":"happy"}
 
 كلام الطفل الآن: "${childText}"`;
     }
@@ -145,21 +151,25 @@ ${blocksCatalog}
                     }
                 }
 
-                if (parsed.mode === 'hybrid' && parsed.text) {
+                if ((parsed.mode === 'hybrid' || parsed.mode === 'text') && parsed.text) {
                     const steps = [];
-                    const opener = blockMap.get(parsed.opener_id) || blockMap.get('bridge_smart_q');
-                    if (opener) steps.push(opener);
-                    const safeEmotion = VALID_EMOTIONS.has(parsed.emotion) ? parsed.emotion : 'wonder';
+                    if (parsed.mode === 'hybrid') {
+                        const opener = blockMap.get(parsed.opener_id);
+                        if (opener) steps.push(opener);
+                    }
+                    const safeEmotion = VALID_EMOTIONS.has(parsed.emotion) ? parsed.emotion : 'happy';
                     steps.push({
-                        id: 'dynamic_answer',
+                        id: parsed.mode === 'hybrid' ? 'dynamic_answer' : 'dynamic_text',
                         role: 'dynamic',
                         emotion: safeEmotion,
-                        led: { pattern: 'sparkle', color: '#00f2fe' },
+                        led: parsed.mode === 'hybrid'
+                            ? { pattern: 'sparkle', color: '#00f2fe' }
+                            : { pattern: 'pulse', color: '#00f2fe' },
                         text: String(parsed.text).trim(),
                         audio: null,
                         recorded: false
                     });
-                    return { mode: 'hybrid', steps: steps };
+                    return { mode: parsed.mode, steps: steps };
                 }
             } catch (e) {
                 // Fall through to plain-text fallback
