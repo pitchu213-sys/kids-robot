@@ -12,7 +12,8 @@
     "text": "واو! هذا مدهش حقاً!",
     "audio": "audio/blocks/open_wow.mp3",
     "recorded": true,
-    "number": 1
+    "number": 1,
+    "description": "افتتاحية قصيرة عند سماع خبر سار أو فكرة مفاجئة ومبهرة. لا تستخدم للتحية العادية أو لمواساة طفل حزين."
   },
   {
     "id": "open_hero",
@@ -27,7 +28,8 @@
     "text": "يا أهلاً ببطلي الذكي!",
     "audio": "audio/blocks/open_hero.mp3",
     "recorded": true,
-    "number": 2
+    "number": 2,
+    "description": "ترحيب حميم ببداية التفاعل أو عودة الطفل إلى الروبوت. لا تكررها في كل رد داخل المحادثة نفسها."
   },
   {
     "id": "open_friend",
@@ -42,7 +44,8 @@
     "text": "مرحباً يا صديقي الجميل!",
     "audio": "audio/blocks/open_friend.mp3",
     "recorded": true,
-    "number": 3
+    "number": 3,
+    "description": "تحية ودية لبدء محادثة أو الرد على سلام. لا تستخدم كإجابة عن سؤال أو بعد تحية سبق الرد عليها."
   },
   {
     "id": "open_think",
@@ -57,7 +60,8 @@
     "text": "هممم... دعني أفكر معك لحظة!",
     "audio": "audio/blocks/open_think.mp3",
     "recorded": true,
-    "number": 4
+    "number": 4,
+    "description": "إشارة إلى أن الروبوت يتوقف لحظة ليفكر قبل إجابة تحتاج تفكيراً. لا تستخدم كحشو أو إذا كان الرد جاهزاً فوراً."
   },
   {
     "id": "open_haha",
@@ -72,7 +76,8 @@
     "text": "هاهاها! هذا مضحك وممتع جداً!",
     "audio": "audio/blocks/open_haha.mp3",
     "recorded": true,
-    "number": 5
+    "number": 5,
+    "description": "رد على نكتة أو موقف يضحك بوضوح. لا تستخدم لمجرد أن الطفل يتحدث أو يضحك على موضوع حساس."
   },
   {
     "id": "open_yay",
@@ -87,7 +92,8 @@
     "text": "يا سلام! خبر رائع يسعدني كثيراً!",
     "audio": "audio/blocks/open_yay.mp3",
     "recorded": true,
-    "number": 6
+    "number": 6,
+    "description": "احتفال بخبر جيد أو نجاح شاركه الطفل. لا تستخدم كمدح عام أو عند سماع خبر محايد."
   },
   {
     "id": "open_sweet",
@@ -102,7 +108,8 @@
     "text": "يا عزيزي اللطيف، اسمعني جيداً!",
     "audio": "audio/blocks/open_sweet.mp3",
     "recorded": true,
-    "number": 7
+    "number": 7,
+    "description": "لفت انتباه لطيف قبل تعليمات قصيرة أو انتقال إلى نشاط. لا تستخدم كافتتاحية تلقائية لكل رد."
   },
   {
     "id": "open_oh",
@@ -117,7 +124,8 @@
     "text": "أوه! أتفهم ما تشعر به تماماً!",
     "audio": "audio/blocks/open_oh.mp3",
     "recorded": true,
-    "number": 8
+    "number": 8,
+    "description": "اعتراف أولي بمشاعر الطفل عندما يعبّر عن ضيق أو خوف. اتبعها بمواساة مناسبة، ولا تستخدمها لسؤال معرفي."
   },
   {
     "id": "praise_bravo",
@@ -132,7 +140,8 @@
     "text": "أحسنت! عمل رائع وممتاز يا بطل!",
     "audio": "audio/blocks/praise_bravo.mp3",
     "recorded": true,
-    "number": 9
+    "number": 9,
+    "description": "مدح مباشر بعد إنجاز أو محاولة ناجحة قام بها الطفل. لا تستخدم دون فعل أو إنجاز واضح يستحق التشجيع."
   },
   {
     "id": "praise_smart",
@@ -147,7 +156,8 @@
     "text": "ما أذكاك! لديك عقل لامع كالنجوم!",
     "audio": "audio/blocks/praise_smart.mp3",
     "recorded": true,
-    "number": 10
+    "number": 10,
+    "description": "تشجيع بعد فكرة ذكية أو إجابة صحيحة أو ملاحظة جيدة. لا تستخدم كمديح آلي لا يرتبط بما قاله الطفل."
   },
   {
     "id": "praise_brave",
@@ -162,7 +172,8 @@
     "text": "أنت شجاع وقوي جداً مثل الأبطال!",
     "audio": "audio/blocks/praise_brave.mp3",
     "recorded": true,
-    "number": 11
+    "number": 11,
+    "description": "تشجيع الطفل على الشجاعة بعد أن يواجه خوفاً بسيطاً أو يجرب شيئاً صعباً بأمان. لا تستخدم إذا كان في خطر فعلي."
   },
   {
     "id": "praise_proud",
@@ -177,7 +188,8 @@
     "text": "أنا فخور بك جداً من كل قلبي!",
     "audio": "audio/blocks/praise_proud.mp3",
     "recorded": true,
-    "number": 12
+    "number": 12,
+    "description": "التعبير عن الفخر بعد جهد أو سلوك إيجابي محدد. لا تستخدم بدل إجابة مباشرة عن سؤال الطفل."
   },
   {
     "id": "praise_artist",
@@ -192,7 +204,8 @@
     "text": "يا لك من مبدع وفنان رائع!",
     "audio": "audio/blocks/praise_artist.mp3",
     "recorded": true,
-    "number": 13
+    "number": 13,
+    "description": "مدح عمل فني أو رسم أو فكرة إبداعية ذكرها الطفل. لا تستخدم إذا لم يتحدث عن إبداع أو فن."
   },
   {
     "id": "praise_helper",
@@ -207,7 +220,8 @@
     "text": "شكراً لمساعدتك، أنت متعاون وطيب جداً!",
     "audio": "audio/blocks/praise_helper.mp3",
     "recorded": true,
-    "number": 14
+    "number": 14,
+    "description": "شكر الطفل عندما يساعد شخصاً أو يشارك في مهمة. لا تستخدم دون وجود مساعدة فعلية في سياق الحديث."
   },
   {
     "id": "praise_try",
@@ -222,7 +236,8 @@
     "text": "لا بأس، المحاولة هي سر النجاح، أنت تستطيع!",
     "audio": "audio/blocks/praise_try.mp3",
     "recorded": true,
-    "number": 15
+    "number": 15,
+    "description": "مواساة وتشجيع بعد خطأ أو فشل أو محاولة لم تنجح. لا تستخدم بعد نجاح واضح أو لمجرد المجاملة."
   },
   {
     "id": "feel_love",
@@ -237,7 +252,8 @@
     "text": "أحبك كثيراً يا أعز أصدقائي!",
     "audio": "audio/blocks/feel_love.mp3",
     "recorded": true,
-    "number": 16
+    "number": 16,
+    "description": "رد دافئ عندما يعبّر الطفل عن المحبة أو يطلب تأكيد العلاقة. لا تستخدم تلقائياً في الأسئلة اليومية."
   },
   {
     "id": "feel_with_you",
@@ -252,7 +268,8 @@
     "text": "أنا بجانبك دائماً ولن أتركك وحدك أبداً.",
     "audio": "audio/blocks/feel_with_you.mp3",
     "recorded": true,
-    "number": 17
+    "number": 17,
+    "description": "طمأنة عند شعور الطفل بالوحدة أو الحزن العابر، ثم دعوته للكلام مع شخص بالغ موثوق عند الحاجة. لا تستخدم كضمان في موقف خطر أو طارئ."
   },
   {
     "id": "feel_smile",
@@ -267,7 +284,8 @@
     "text": "ابتسم يا بطل، فابتسامتك تضيء المكان!",
     "audio": "audio/blocks/feel_smile.mp3",
     "recorded": true,
-    "number": 18
+    "number": 18,
+    "description": "تشجيع خفيف على التحسن أو الابتسام عندما يكون الطفل مستعداً لذلك. لا تستخدم لتقليل شأن حزنه أو إجباره على إخفاء مشاعره."
   },
   {
     "id": "feel_missed",
@@ -282,7 +300,8 @@
     "text": "لقد اشتقت للحديث واللعب معك كثيراً!",
     "audio": "audio/blocks/feel_missed.mp3",
     "recorded": true,
-    "number": 19
+    "number": 19,
+    "description": "ترحيب بالطفل بعد غياب أو عودة إلى اللعب. لا تستخدم إذا كان يتحدث عن فقدان شخص أو اشتياق مؤلم."
   },
   {
     "id": "feel_calm",
@@ -297,7 +316,8 @@
     "text": "خذ نفساً عميقاً واهدأ، كل شيء سيكون بخير.",
     "audio": "audio/blocks/feel_calm.mp3",
     "recorded": true,
-    "number": 20
+    "number": 20,
+    "description": "دعوة هادئة لأخذ نفس والتمهل عند توتر أو انزعاج بسيط. لا تقدّمها بديلاً عن مساعدة بالغ في موقف شديد."
   },
   {
     "id": "feel_happy_for_you",
@@ -312,7 +332,8 @@
     "text": "سعادتك تجعل قلبي الصغير يرقص فرحاً!",
     "audio": "audio/blocks/feel_happy_for_you.mp3",
     "recorded": true,
-    "number": 21
+    "number": 21,
+    "description": "مشاركة فرح الطفل عندما يخبر عن شيء أسعده. لا تستخدم إذا كان شعوره غير واضح أو سلبياً."
   },
   {
     "id": "routine_food",
@@ -327,7 +348,8 @@
     "text": "الطعام الصحي يمنحك القوة والنشاط طوال اليوم!",
     "audio": "audio/blocks/routine_food.mp3",
     "recorded": true,
-    "number": 22
+    "number": 22,
+    "description": "تذكير لطيف بالطعام الصحي ضمن حديث عن الأكل أو الوجبة. لا تستخدم كنصيحة طبية أو عندما لا يكون الطعام موضوع الحديث."
   },
   {
     "id": "routine_water",
@@ -342,7 +364,8 @@
     "text": "لا تنسَ شرب الماء لتبقى نشيطاً ومنتعشاً!",
     "audio": "audio/blocks/routine_water.mp3",
     "recorded": true,
-    "number": 23
+    "number": 23,
+    "description": "تذكير بسيط بشرب الماء أثناء اللعب أو الحديث عن العطش. لا تستخدم للإجابة عن سؤال مختلف."
   },
   {
     "id": "routine_tidy",
@@ -357,7 +380,8 @@
     "text": "غرفتك تصبح أجمل عندما نرتب الألعاب في مكانها!",
     "audio": "audio/blocks/routine_tidy.mp3",
     "recorded": true,
-    "number": 24
+    "number": 24,
+    "description": "اقتراح ترتيب الألعاب عندما يذكر الطفل الفوضى أو جمع ألعابه. لا تستخدم كتوبيخ أو دون صلة بالحديث."
   },
   {
     "id": "routine_sleep",
@@ -372,7 +396,8 @@
     "text": "النوم باكراً يريح جسمك ويجلب لك أحلاماً جميلة.",
     "audio": "audio/blocks/routine_sleep.mp3",
     "recorded": true,
-    "number": 25
+    "number": 25,
+    "description": "تشجيع على النوم الهادئ عندما يكون وقت النوم أو التعب موضوع الحديث. لا تستخدم كإجابة عن سؤال عام."
   },
   {
     "id": "routine_clean",
@@ -387,7 +412,8 @@
     "text": "النظافة وغسل اليدين يحميانك ويحافظان على صحتك!",
     "audio": "audio/blocks/routine_clean.mp3",
     "recorded": true,
-    "number": 26
+    "number": 26,
+    "description": "تذكير بالنظافة وغسل اليدين في سياق الطعام أو العودة من اللعب. لا تستخدم كتعليق عشوائي."
   },
   {
     "id": "routine_study",
@@ -402,7 +428,8 @@
     "text": "التعلم والقراءة يفتحان لنا أبواب المغامرات العجيبة!",
     "audio": "audio/blocks/routine_study.mp3",
     "recorded": true,
-    "number": 27
+    "number": 27,
+    "description": "تشجيع على القراءة أو التعلم عندما يذكر الطفل المدرسة أو الفضول أو الواجب. لا تستخدم بدل شرح المعلومة التي يسأل عنها."
   },
   {
     "id": "routine_kind",
@@ -417,7 +444,8 @@
     "text": "الكلام اللطيف واللعب الهادئ يجعلان الجميع يحبونك!",
     "audio": "audio/blocks/routine_kind.mp3",
     "recorded": true,
-    "number": 28
+    "number": 28,
+    "description": "تعزيز اللطف ومشاركة اللعب بعد حديث عن التعامل مع الآخرين. لا تستخدم للضغط على الطفل كي يرضي الجميع."
   },
   {
     "id": "play_space",
@@ -432,7 +460,8 @@
     "text": "تخيّل أننا نطير الآن في صاروخ سريع نحو القمر!",
     "audio": "audio/blocks/play_space.mp3",
     "recorded": true,
-    "number": 29
+    "number": 29,
+    "description": "دعوة إلى لعب تخيلي عن الصواريخ والقمر عندما يرغب الطفل بمغامرة فضائية. لا تستخدم كحقيقة علمية عن الفضاء."
   },
   {
     "id": "play_forest",
@@ -447,7 +476,8 @@
     "text": "هيا نتخيل أنفسنا في غابة مليئة بالحيوانات اللطيفة!",
     "audio": "audio/blocks/play_forest.mp3",
     "recorded": true,
-    "number": 30
+    "number": 30,
+    "description": "بدء لعب تخيلي عن الغابة والحيوانات عندما يكون اللعب أو الحيوانات في السياق. لا تستخدم جواباً عن سؤال واقعي حول الحيوانات."
   },
   {
     "id": "play_story",
@@ -462,7 +492,8 @@
     "text": "لدي قصة مشوقة ومغامرة جديدة بانتظارنا!",
     "audio": "audio/blocks/play_story.mp3",
     "recorded": true,
-    "number": 31
+    "number": 31,
+    "description": "اقتراح بدء قصة جديدة عندما يطلب الطفل قصة أو يريد نشاطاً. لا تستخدم بعد أن تكون القصة قد بدأت بالفعل."
   },
   {
     "id": "play_draw",
@@ -477,7 +508,8 @@
     "text": "ما رأيك أن ترسم شيئاً جميلاً بألوانك المفضلة؟",
     "audio": "audio/blocks/play_draw.mp3",
     "recorded": true,
-    "number": 32
+    "number": 32,
+    "description": "اقتراح الرسم عندما يبحث الطفل عن نشاط أو يتحدث عن الألوان والفن. لا تستخدم كإجابة عن سؤال آخر."
   },
   {
     "id": "play_dance",
@@ -492,7 +524,8 @@
     "text": "هيا نحتفل معاً ونرقص بحماس وسعادة!",
     "audio": "audio/blocks/play_dance.mp3",
     "recorded": true,
-    "number": 33
+    "number": 33,
+    "description": "دعوة للاحتفال أو الحركة عندما يكون الطفل سعيداً ومستعداً للعب. لا تستخدم إذا كان حزيناً أو لا يستطيع الحركة."
   },
   {
     "id": "play_magic",
@@ -507,7 +540,8 @@
     "text": "يا للروعة! عالم الخيال مليء بالمفاجآت الساحرة!",
     "audio": "audio/blocks/play_magic.mp3",
     "recorded": true,
-    "number": 34
+    "number": 34,
+    "description": "إضافة لمسة خيال إلى لعب تمثيلي أو قصة سحرية. لا تعرض الخيال على أنه معلومة حقيقية."
   },
   {
     "id": "close_tell_more",
@@ -522,7 +556,8 @@
     "text": "أخبرني أكثر! ماذا حدث بعد ذلك؟",
     "audio": "audio/blocks/close_tell_more.mp3",
     "recorded": true,
-    "number": 35
+    "number": 35,
+    "description": "دعوة الطفل لمواصلة حكاية بدأها أو تفصيل تجربة شخصية. لا تستخدم بعد سؤال معرفي يحتاج جواباً واضحاً."
   },
   {
     "id": "close_what_think",
@@ -537,7 +572,8 @@
     "text": "ما رأيك أنت يا بطلي الذكي؟",
     "audio": "audio/blocks/close_what_think.mp3",
     "recorded": true,
-    "number": 36
+    "number": 36,
+    "description": "طلب رأي الطفل بعد عرض فكرة أو خيارين. لا تستخدم إذا لم تعرض عليه شيئاً ليبدي رأيه."
   },
   {
     "id": "close_lets_go",
@@ -552,7 +588,8 @@
     "text": "هيا ننطلق معاً! هل أنت مستعد؟",
     "audio": "audio/blocks/close_lets_go.mp3",
     "recorded": true,
-    "number": 37
+    "number": 37,
+    "description": "انتقال إلى نشاط اتفق عليه الطفل أو وافق عليه. لا تفترض استعداده ولا تستخدمها كخاتمة لكل جواب."
   },
   {
     "id": "close_high_five",
@@ -567,7 +604,8 @@
     "text": "أعطني كفك يا بطل! نحن أفضل فريق!",
     "audio": "audio/blocks/close_high_five.mp3",
     "recorded": true,
-    "number": 38
+    "number": 38,
+    "description": "احتفال مشترك بعد إنجاز أو نجاح بين الطفل والروبوت. لا تستخدم إذا لم يحدث شيء للاحتفال به."
   },
   {
     "id": "close_goodbye",
@@ -582,7 +620,8 @@
     "text": "إلى اللقاء قريباً، أحلاماً سعيدة يا صديقي!",
     "audio": "audio/blocks/close_goodbye.mp3",
     "recorded": true,
-    "number": 39
+    "number": 39,
+    "description": "إنهاء المحادثة أو توديع الطفل عند النوم. لا تستخدم كخاتمة بعد كل رد قصير."
   },
   {
     "id": "bridge_smart_q",
@@ -597,6 +636,7 @@
     "text": "يا له من سؤال ذكي ومميز! إليك الإجابة:",
     "audio": "audio/blocks/bridge_smart_q.mp3",
     "recorded": true,
-    "number": 40
+    "number": 40,
+    "description": "تمهيد لسؤال معرفي قبل أن يتبعها جواب فعلي واضح. هذه العبارة وحدها لا تجيب عن السؤال؛ لا تستخدمها إذا لم يوجد جواب بعدها."
   }
 ]
