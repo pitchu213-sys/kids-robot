@@ -5,7 +5,10 @@
 (function (root) {
     'use strict';
 
-    const STOP_WORDS = ['يا', 'في', 'من', 'على', 'هل', 'هو', 'هي', 'مع', 'و', 'ان', 'ما', 'عن'];
+    const CLEAR_SINGLE_TURN_PHRASES = new Set([
+        'مرحبا', 'سلام', 'اهلا', 'صباح الخير', 'مساء الخير',
+        'احبك', 'نحبك', 'نكتة', 'نكته', 'ضحكني', 'وداعا', 'مع السلامة'
+    ]);
     const VALID_EMOTIONS = new Set(['happy', 'wonder', 'curious', 'love', 'sleepy']);
 
     /**
@@ -26,68 +29,27 @@
     }
 
     /**
-     * Scores and selects the highest-confidence Tier 1 pre-recorded full Q&A entry.
+     * Only use a full recorded answer when the whole utterance matches a curated
+     * trigger. Partial keyword overlap is unsafe here: it swallows new questions.
      */
     function findMatchingQA(qaLibrary, transcript) {
         if (!qaLibrary || !qaLibrary.length) return null;
         const normInput = normalizeArabic(transcript);
         if (!normInput) return null;
 
-        const inputWords = normInput.split(' ').filter(w => w.length > 1 && !STOP_WORDS.includes(w));
-        let bestItem = null;
-        let highestScore = 0;
+        const inputWordCount = normInput.split(' ').filter(Boolean).length;
 
         for (const item of qaLibrary) {
-            let score = 0;
-            const normTitle = normalizeArabic(item.title || '');
-            const normCat = normalizeArabic(item.category || '');
-
-            if (normInput === normTitle) score += 1000;
-            if (normInput === normCat) score += 800;
-
-            if (normTitle && (normInput.includes(normTitle) || (normInput.length >= 4 && normTitle.includes(normInput)))) {
-                score += 400;
-            }
-            if (normCat && (normInput.includes(normCat) || (normInput.length >= 4 && normCat.includes(normInput)))) {
-                score += 300;
-            }
-
-            const metaWords = (normTitle + ' ' + normCat).split(' ').filter(w => w.length > 2 && !STOP_WORDS.includes(w));
-            for (const w of inputWords) {
-                if (metaWords.includes(w)) score += 150;
-            }
-
-            if (item.triggers) {
-                for (const trig of item.triggers) {
-                    const normTrig = normalizeArabic(trig);
-                    if (!normTrig) continue;
-
-                    if (normInput === normTrig) {
-                        score += 1000;
-                    } else if (normInput.includes(normTrig)) {
-                        score += 500 + normTrig.length * 5;
-                    } else if (normTrig.includes(normInput) && normInput.length >= 3) {
-                        score += 250 + normInput.length * 5;
-                    } else {
-                        const trigWords = normTrig.split(' ').filter(w => w.length > 1 && !STOP_WORDS.includes(w));
-                        let matchedWords = 0;
-                        for (const tw of trigWords) {
-                            if (inputWords.includes(tw)) matchedWords++;
-                        }
-                        if (matchedWords > 0 && trigWords.length > 0) {
-                            score += (matchedWords / trigWords.length) * 200;
-                        }
-                    }
-                }
-            }
-
-            if (score > highestScore) {
-                highestScore = score;
-                bestItem = item;
-            }
+            const exactMatch = (item.triggers || []).some(trigger => {
+                const normalizedTrigger = normalizeArabic(trigger);
+                if (!normalizedTrigger || normalizedTrigger !== normInput) return false;
+                const triggerWordCount = normalizedTrigger.split(' ').filter(Boolean).length;
+                return triggerWordCount > 1 || CLEAR_SINGLE_TURN_PHRASES.has(normalizedTrigger);
+            });
+            if (exactMatch && (inputWordCount > 1 || CLEAR_SINGLE_TURN_PHRASES.has(normInput))) return item;
         }
 
-        return highestScore >= 100 ? bestItem : null;
+        return null;
     }
 
     /**

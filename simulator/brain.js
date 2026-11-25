@@ -536,21 +536,32 @@ class RobotBrain {
                 }
             };
 
-            const modelName = localStorage.getItem('kids_robot_active_model') || 'gemini-1.5-flash';
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                throw new Error(`خطأ من خادم Google (${res.status})`);
+            const models = await this.fetchAvailableModels(apiKey);
+            let raw = '';
+            let requestError = null;
+            for (const modelName of models) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const googleError = data?.error || {};
+                    const reasons = (googleError.details || []).map(detail => detail.reason).filter(Boolean).join(', ');
+                    requestError = new Error(this.describeParentGeminiError(
+                        `${googleError.status || `HTTP_${res.status}`}${reasons ? ` (${reasons})` : ''}: ${googleError.message || 'Google returned no message.'}`
+                    ));
+                    if ([401, 403, 429].includes(res.status) || googleError.status === 'RESOURCE_EXHAUSTED') break;
+                    continue;
+                }
+                const candidate = data.candidates?.[0];
+                raw = (candidate?.content?.parts || []).map(part => part.text || '').join('').trim();
+                if (raw) break;
+                requestError = new Error(`Gemini أعاد استجابة بلا نص (finishReason: ${candidate?.finishReason || data.promptFeedback?.blockReason || 'غير متاح'}).`);
             }
-
-            const data = await res.json();
-            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (!raw) throw requestError || new Error('لم تُرجع Google نصاً لهذا الطلب.');
             const parsed = window.KidsRobotQA.parseComposerReply(raw, this.voiceBlocks);
 
             const chipsHtml = parsed.steps.map(s => `
@@ -578,6 +589,8 @@ class RobotBrain {
             this.logActivity(`✨ تركيب رد متسلسل لـ "${text}": ${parsed.steps.map(s => s.id).join(' + ')}`);
         } catch (e) {
             console.error('Composer test error:', e);
+            this.geminiStatusBadge.textContent = `⚠️ ${this.describeParentGeminiError(e.message)}`;
+            this.geminiStatusBadge.style.color = '#f59e0b';
             if (this.composerTestResult) {
                 this.composerTestResult.innerHTML = `<span style="color:#ef4444;">❌ فشل التركيب: ${e.message}</span>`;
             }
@@ -600,7 +613,10 @@ class RobotBrain {
             this.geminiStatusBadge.innerHTML = '🟢 المفتاح محفوظ ومفعّل';
             this.geminiStatusBadge.style.color = '#10b981';
             // Pre-fetch actual active models from Google
-            this.fetchAvailableModels(savedKey);
+            this.fetchAvailableModels(savedKey).catch(err => {
+                this.geminiStatusBadge.textContent = `⚠️ ${this.describeParentGeminiError(err.message)}`;
+                this.geminiStatusBadge.style.color = '#f59e0b';
+            });
         }
 
         if (savedVoice) this.geminiVoiceSelect.value = savedVoice;
@@ -627,21 +643,22 @@ class RobotBrain {
             }
             this.geminiStatusBadge.innerHTML = '⏳ جاري فحص والتحقق من المفتاح مع Google...';
             this.geminiStatusBadge.style.color = '#f59e0b';
-
-            const models = await this.fetchAvailableModels(key);
-            if (models.length > 0) {
+            this.availableModels = [];
+            try {
+                const models = await this.fetchAvailableModels(key);
                 localStorage.setItem('kids_robot_gemini_key', key);
                 localStorage.setItem('kids_robot_gemini_voice', this.geminiVoiceSelect.value);
                 localStorage.setItem('kids_robot_gemini_prompt', this.geminiSystemPrompt.value);
 
-                this.geminiStatusBadge.innerHTML = `🟢 متصل بنجاح! النماذج المتاحة: ${models.slice(0, 2).join(', ')}`;
+                this.geminiStatusBadge.textContent = `🟢 متصل بنجاح! النماذج المتاحة: ${models.slice(0, 2).join(', ')}`;
                 this.geminiStatusBadge.style.color = '#10b981';
                 this.logActivity(`💾 تم فحص المفتاح بنجاح! النماذج المتاحة: ${models.join(', ')}`);
                 alert(`تم التحقق من المفتاح بنجاح! 🎉\nالنماذج النشطة في حسابك: ${models.slice(0, 3).join(', ')}`);
-            } else {
-                this.geminiStatusBadge.innerHTML = '❌ فشل التحقق، تأكد من صحة المفتاح';
+            } catch (err) {
+                this.geminiStatusBadge.textContent = `⚠️ ${this.describeParentGeminiError(err.message)}`;
                 this.geminiStatusBadge.style.color = '#ef4444';
-                alert('تعذر الاتصال بـ Google. يرجى التأكد من نسخ المفتاح كاملاً.');
+                this.logActivity(`❌ تعذر التحقق من المفتاح: ${err.message}`, 'error');
+                alert(`تعذر التحقق من المفتاح.\n${this.describeParentGeminiError(err.message)}`);
             }
         });
 
@@ -661,14 +678,15 @@ class RobotBrain {
                 this.logActivity(`🔊 تم بنجاح! الروبوت يتكلم: "${result.text}"`);
             } catch (err) {
                 console.error('Gemini test error:', err);
+                this.geminiStatusBadge.textContent = `⚠️ ${this.describeParentGeminiError(err.message)}`;
+                this.geminiStatusBadge.style.color = '#f59e0b';
                 this.logActivity(`❌ تعذر الاتصال بـ Gemini (${err.message})، جاري تشغيل الصوت التجريبي المحلي...`, 'warn');
-                // Immediate local audio test so user ALWAYS hears sound
-                const localAudioUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent('مرحباً يا بطل! أنا روبوتك الذكي!');
-                this.playAudioDirectly(localAudioUrl, 'مرحباً يا بطل! أنا روبوتك الذكي!');
+                // Play an existing recording; keep this fallback local and free.
+                const localAudioUrl = 'audio/blocks/open_friend.mp3';
+                this.playAudioDirectly(localAudioUrl, 'مرحباً يا صديقي الجميل!');
                 this.broadcastCommand({
-                    event: 'PLAY_GEMINI_AUDIO',
-                    audioUrl: localAudioUrl,
-                    text: 'مرحباً يا بطل! أنا روبوتك الذكي!',
+                    event: 'PLAY_VOICE_BLOCK',
+                    id: 'open_friend',
                     face: 'happy',
                     led: { pattern: 'spin', color: '#00f2fe' }
                 });
@@ -692,6 +710,8 @@ class RobotBrain {
                 await this.requestGeminiVoice(prompt, false);
                 this.geminiPromptInput.value = '';
             } catch (err) {
+                this.geminiStatusBadge.textContent = `⚠️ ${this.describeParentGeminiError(err.message)}`;
+                this.geminiStatusBadge.style.color = '#f59e0b';
                 alert(`خطأ في Gemini: ${err.message}`);
                 this.logActivity(`❌ خطأ: ${err.message}`, 'error');
             } finally {
@@ -705,29 +725,16 @@ class RobotBrain {
      */
     async fetchAvailableModels(apiKey) {
         if (this.availableModels && this.availableModels.length > 0) return this.availableModels;
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-            if (res.ok) {
-                const data = await res.json();
-                const valid = (data.models || [])
-                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-                    .map(m => m.name.replace('models/', ''));
-
-                if (valid.length > 0) {
-                    // Sort: prioritize flash models
-                    valid.sort((a, b) => {
-                        if (a.includes('flash') && !b.includes('flash')) return -1;
-                        if (!a.includes('flash') && b.includes('flash')) return 1;
-                        return 0;
-                    });
-                    this.availableModels = valid;
-                    return valid;
-                }
-            }
-        } catch (e) {
-            console.warn('ListModels failed:', e);
-        }
-        return ['gemini-3.8-flash'];
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(this.describeParentGeminiError(data?.error?.message || `HTTP ${res.status}`));
+        const valid = (data.models || [])
+            .filter(model => model.supportedGenerationMethods?.includes('generateContent'))
+            .map(model => model.name.replace(/^models\//, ''));
+        valid.sort((a, b) => Number(b.includes('flash')) - Number(a.includes('flash')));
+        if (!valid.length) throw new Error('لم تُرجع Google نموذجاً يدعم generateContent لهذا المفتاح.');
+        this.availableModels = valid;
+        return valid;
     }
 
     /**
@@ -746,7 +753,6 @@ class RobotBrain {
         }
         this.lastGeminiCallTime = Date.now();
 
-        const voiceName = this.geminiVoiceSelect.value || 'Puck';
         const systemPrompt = this.geminiSystemPrompt.value.trim();
 
         // Dynamically get the models Google currently provides
@@ -758,105 +764,38 @@ class RobotBrain {
                 this.logActivity(`جاري استدعاء نموذج (${modelName})...`);
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-                // Try with AUDIO modality first
-                let payload = {
+                // The child flow composes recorded blocks, so text-only generation
+                // avoids paid TTS paths and preserves the free Gemini quota.
+                const payload = {
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
                     generationConfig: {
-                        responseModalities: ["AUDIO", "TEXT"],
-                        speechConfig: {
-                            voiceConfig: {
-                                prebuiltVoiceConfig: { voiceName: voiceName }
-                            }
-                        }
+                        maxOutputTokens: 140,
+                        temperature: 0.45
                     }
                 };
 
-                let response = await fetch(url, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                // If 429 Rate Limit, wait 2.5 seconds and retry
-                if (response.status === 429) {
-                    this.logActivity('⏳ حساب Google مؤقت، جاري الانتظار ثانيتين وإعادة المحاولة تلقائياً...', 'warn');
-                    await new Promise(r => setTimeout(r, 2500));
-                    response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                }
-
-                // If audio cluster has high-demand or unsupported, fallback to pure TEXT on this active model
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
-                    console.warn(`[${modelName}] Audio attempt failed, trying text:`, errData?.error?.message);
-
-                    payload = {
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-                        generationConfig: {
-                            maxOutputTokens: 50,
-                            temperature: 0.7
-                        }
-                    };
-
-                    response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.status === 429) {
-                        await new Promise(r => setTimeout(r, 2500));
-                        response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                    }
-
-                    if (!response.ok) {
-                        const errData2 = await response.json().catch(() => ({}));
-                        throw new Error(errData2?.error?.message || `HTTP ${response.status}`);
-                    }
+                    const googleError = errData?.error || {};
+                    const reason = (googleError.details || []).map(detail => detail.reason).filter(Boolean).join(', ');
+                    throw new Error(this.describeParentGeminiError(`${googleError.status || `HTTP_${response.status}`}${reason ? ` (${reason})` : ''}: ${googleError.message || 'Google returned no message.'}`));
                 }
 
                 const data = await response.json();
                 const candidate = data.candidates?.[0];
-                if (!candidate) continue;
-
-                let audioBase64 = null;
-                let mimeType = 'audio/wav';
-                let textReply = '';
-
-                for (const part of candidate.content?.parts || []) {
-                    if (part.text) textReply += part.text;
-                    if (part.inlineData) {
-                        audioBase64 = part.inlineData.data;
-                        mimeType = part.inlineData.mimeType || 'audio/wav';
-                    }
-                }
-
-                if (!textReply && isDirectTest) {
-                    textReply = userPrompt;
-                }
+                let textReply = (candidate?.content?.parts || []).map(part => part.text || '').join('').trim();
+                if (!textReply && isDirectTest) textReply = userPrompt;
+                if (!textReply) throw new Error(`Gemini أعاد استجابة بلا نص (finishReason: ${candidate?.finishReason || data.promptFeedback?.blockReason || 'غير متاح'}).`);
 
                 this.logActivity(`🤖 رد الذكاء الاصطناعي (${modelName}): "${textReply}"`);
 
-                // If no native audio base64, create neural audio URL directly
-                let finalAudioDataUrl = null;
-                if (audioBase64) {
-                    if (mimeType.includes('pcm') || !mimeType.includes('wav')) {
-                        finalAudioDataUrl = this.pcmBase64ToWavDataUrl(audioBase64, 24000);
-                    } else {
-                        finalAudioDataUrl = `data:${mimeType};base64,${audioBase64}`;
-                    }
-                } else if (textReply) {
-                    finalAudioDataUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(textReply);
-                }
+                const finalAudioDataUrl = null;
 
                 // 1. Play directly HERE on brain.html so parent hears it immediately
                 this.playAudioDirectly(finalAudioDataUrl, textReply);
@@ -874,6 +813,7 @@ class RobotBrain {
             } catch (err) {
                 console.warn(`Model ${modelName} error: ${err.message}`);
                 lastError = err;
+                if (/RESOURCE_EXHAUSTED|429|quota/i.test(err.message)) break;
             }
         }
 
@@ -1056,8 +996,34 @@ class RobotBrain {
 
         const item = document.createElement('div');
         item.className = `log-item ${type}`;
-        item.innerHTML = `<span class="log-time">${timeStr}</span> <span class="log-msg">${msg}</span>`;
+        const time = document.createElement('span');
+        time.className = 'log-time';
+        time.textContent = timeStr;
+        const message = document.createElement('span');
+        message.className = 'log-msg';
+        message.textContent = msg;
+        item.append(time, document.createTextNode(' '), message);
         this.logStream.prepend(item);
+    }
+
+    describeParentGeminiError(error) {
+        const value = String(error || 'خطأ غير معروف');
+        if (/RESOURCE_EXHAUSTED|429|quota|rate.?limit/i.test(value)) {
+            return `انتهت حصة Gemini المجانية أو تم تجاوز حد الطلبات. ينتظر الروبوت تجدد الحصة ويستخدم تسجيلاً محلياً الآن. تفاصيل Google: ${value}`;
+        }
+        if (/API_KEY_INVALID|invalid api key|API key not valid/i.test(value)) {
+            return `رفضت Google مفتاح API. راجع المفتاح وإعدادات Google AI Studio. تفاصيل Google: ${value}`;
+        }
+        if (/PERMISSION_DENIED|403/i.test(value)) {
+            return `رفضت Google صلاحية هذا المفتاح أو النموذج. تحقق من تفعيل Gemini API للمفتاح. تفاصيل Google: ${value}`;
+        }
+        if (/NOT_FOUND|404|not found/i.test(value)) {
+            return `النموذج الذي أُعيد غير متاح. تم طلب قائمة النماذج من Google مباشرة؛ تحقق من صلاحية النموذج لهذا المفتاح. تفاصيل Google: ${value}`;
+        }
+        if (/Failed to fetch|NetworkError|fetch/i.test(value)) {
+            return `تعذر الوصول إلى Google بسبب الاتصال أو إعدادات الشبكة. شُغّل تسجيل محلي للطفل. تفاصيل المتصفح: ${value}`;
+        }
+        return `تعذر إنشاء رد عبر Gemini؛ شُغّل تسجيل محلي للطفل. تفاصيل Google: ${value}`;
     }
 
     // --- 7. REAL-TIME COMMUNICATION (BROADCAST & WEBSOCKET) ---
@@ -1072,8 +1038,14 @@ class RobotBrain {
             } else if (data.event === 'CHILD_SPOKE') {
                 this.logActivity(`🎤 الطفل قال للروبوت: "${data.transcript}"`, 'event');
             } else if (data.event === 'ROBOT_REPLIED') {
-                const badge = data.source === 'qa_library' ? '🎙️ [مكتبة الردود المسجلة]' : '⚡ [ذكاء Gemini]';
+                const badge = data.source === 'qa_library' ? '🎙️ [مكتبة الردود المسجلة]'
+                    : (data.source === 'local_fallback' ? '🎙️ [رد محلي احتياطي]' : '⚡ [ذكاء Gemini]');
                 this.logActivity(`🤖 الروبوت أجاب: "${data.reply}" ${badge}`);
+            } else if (data.event === 'ROBOT_ERROR') {
+                const detail = this.describeParentGeminiError(data.error || data.code);
+                this.geminiStatusBadge.textContent = `⚠️ ${detail}`;
+                this.geminiStatusBadge.style.color = '#f59e0b';
+                this.logActivity(`⚠️ تشخيص Gemini (${data.code || 'خطأ'}): ${detail}`, 'warn');
             } else if (data.event === 'ROBOT_FACE_ONLINE') {
                 this.statusDot.style.background = '#10b981';
                 this.statusText.innerText = 'وجه الروبوت متصل ونشط 🤖';

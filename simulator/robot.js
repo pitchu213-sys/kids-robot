@@ -698,6 +698,49 @@ class RobotSimulator {
         return window.KidsRobotQA ? window.KidsRobotQA.findMatchingQA(this.qaLibrary, transcript) : null;
     }
 
+    describeGeminiError(errorData, httpStatus) {
+        const error = errorData && errorData.error ? errorData.error : {};
+        const status = error.status || `HTTP_${httpStatus || 'UNKNOWN'}`;
+        const message = error.message || 'Google did not include an error message.';
+        const details = (error.details || []).map(item => item.reason || item['@type']).filter(Boolean);
+        return `${status}${details.length ? ` (${[...new Set(details)].join(', ')})` : ''}: ${message}`;
+    }
+
+    playLocalRecordedFallback(transcript) {
+        const normalized = window.KidsRobotQA
+            ? window.KidsRobotQA.normalizeArabic(transcript)
+            : String(transcript || '').toLowerCase();
+        const pick = (id) => (this.voiceBlocks || []).find(block => block.id === id && block.recorded && block.audio);
+        let block = null;
+
+        if (/(حزين|حزينه|زعلان|زعلانه|خايف|خايفه|ابكي|ابكي|متضايق|متضايقه)/.test(normalized)) {
+            block = pick('feel_with_you') || pick('feel_calm');
+        } else if (/(قصه|حكايه|حدثني|احكيلي|حكيت|صارلي|عملت|لعبت)/.test(normalized)) {
+            block = pick('close_tell_more');
+        } else {
+            // A recorded thinking prompt keeps the conversation warm without inventing facts.
+            block = pick('open_think');
+        }
+
+        if (!block) block = (this.voiceBlocks || []).find(item => item.recorded && item.audio);
+        if (!block) {
+            // This is an existing recording in simulator/audio/blocks, used while
+            // the JSON catalog is still loading or could not be fetched.
+            block = {
+                id: 'open_think', text: 'هممم... دعني أفكر معك لحظة!',
+                emotion: 'curious', led: { pattern: 'spin', color: '#a855f7' },
+                audio: 'audio/blocks/open_think.mp3', recorded: true
+            };
+        }
+
+        this.playBlockSequence([block]);
+        if (this.bus) {
+            this.bus.postMessage({
+                event: 'ROBOT_REPLIED', reply: block.text, source: 'local_fallback', blocks: [block.id]
+            });
+        }
+    }
+
     playQAResponse(qaItem) {
         console.log('Playing QA Library response:', qaItem.title);
         this.stopAllSpeech();
@@ -761,27 +804,18 @@ class RobotSimulator {
     }
 
     async getWorkingGeminiModel(apiKey) {
-        let cached = localStorage.getItem('kids_robot_active_model');
-        if (cached) return cached;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(this.describeGeminiError(data, res.status));
 
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-            if (res.ok) {
-                const data = await res.json();
-                const valid = (data.models || [])
-                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-                    .map(m => m.name.replace('models/', ''));
+        const valid = (data.models || [])
+            .filter(model => model.supportedGenerationMethods?.includes('generateContent'))
+            .map(model => model.name.replace(/^models\//, ''));
+        valid.sort((a, b) => Number(b.includes('flash')) - Number(a.includes('flash')));
+        if (!valid.length) throw new Error('لم تعرض Google أي نموذج يدعم generateContent لهذا المفتاح.');
 
-                if (valid.length > 0) {
-                    const flash = valid.find(m => m.includes('flash')) || valid[0];
-                    localStorage.setItem('kids_robot_active_model', flash);
-                    return flash;
-                }
-            }
-        } catch (e) {
-            console.warn('Model list query error:', e);
-        }
-        return 'gemini-1.5-flash';
+        localStorage.setItem('kids_robot_active_model', valid[0]);
+        return valid;
     }
 
     async askGeminiAndReply(childText) {
@@ -795,18 +829,18 @@ class RobotSimulator {
 
         // Check if API Key exists
         if (!apiKey) {
-            setTimeout(() => {
-                const reply = `يا بطل، لم يتم إدخال مفتاح الذكاء الاصطناعي في عقل الروبوت بعد!`;
-                this.storyText.innerText = reply;
-                this.speakArabic(reply);
-            }, 800);
+            this.playLocalRecordedFallback(childText);
+            if (this.bus) this.bus.postMessage({
+                event: 'ROBOT_ERROR', code: 'API_KEY_MISSING',
+                error: 'لم يُحفظ مفتاح Gemini في لوحة الأهل.'
+            });
             return;
         }
 
         try {
-            const primaryModel = await this.getWorkingGeminiModel(apiKey);
-            const candidateModels = [primaryModel, 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.8-flash'];
-            const uniqueModels = [...new Set(candidateModels)];
+            const listedModels = await this.getWorkingGeminiModel(apiKey);
+            const candidateModels = Array.isArray(listedModels) ? listedModels : [listedModels];
+            if (!candidateModels.length) throw new Error('لم تعرض Google أي نموذج يدعم generateContent لهذا المفتاح.');
 
             const customPrompt = localStorage.getItem('kids_robot_gemini_prompt');
             let childProfile = null;
@@ -832,8 +866,9 @@ class RobotSimulator {
 
             let rawReply = '';
             let successfulModel = '';
+            let lastRequestError = null;
 
-            for (const modelName of uniqueModels) {
+            for (const modelName of candidateModels) {
                 try {
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
                     const res = await fetch(url, {
@@ -844,23 +879,36 @@ class RobotSimulator {
 
                     if (res.ok) {
                         const data = await res.json();
-                        rawReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                        const candidate = data.candidates?.[0];
+                        rawReply = (candidate?.content?.parts || []).map(part => part.text || '').join('').trim();
                         if (rawReply) {
                             successfulModel = modelName;
                             localStorage.setItem('kids_robot_active_model', modelName);
                             break;
                         }
+                        const finishReason = candidate?.finishReason || data.promptFeedback?.blockReason;
+                        throw new Error(finishReason
+                            ? `Gemini لم يُرجع نصاً (finishReason: ${finishReason}).`
+                            : 'Gemini أعاد استجابة بلا نص أو مرشحين.');
                     } else {
                         const err = await res.json().catch(() => ({}));
-                        console.warn(`Model ${modelName} failed (${res.status}):`, err?.error?.message);
+                        const message = this.describeGeminiError(err, res.status);
+                        console.warn(`Model ${modelName} failed (${res.status}):`, message);
+                        const requestError = new Error(message);
+                        requestError.httpStatus = res.status;
+                        requestError.apiStatus = err?.error?.status;
+                        lastRequestError = requestError;
+                        // Quota errors are account-wide; trying more models can only waste free quota.
+                        if ([401, 403, 429].includes(res.status) || err?.error?.status === 'RESOURCE_EXHAUSTED') break;
                     }
                 } catch (err) {
                     console.warn(`Request failed for ${modelName}:`, err);
+                    lastRequestError = err;
                 }
             }
 
             if (!rawReply) {
-                throw new Error('لم يرجع أي من نماذج Gemini إجابة، يرجى التأكد من صلاحية المفتاح');
+                throw lastRequestError || new Error('لم يرجع أي نموذج من Google إجابة.');
             }
 
             console.log(`Success with Gemini model (${successfulModel}):`, rawReply);
@@ -901,11 +949,9 @@ class RobotSimulator {
             }
         } catch (e) {
             console.error('Gemini chat error:', e);
-            const errorMsg = `عذراً يا بطل، واجهت مشكلة في التفكير: ${e.message}`;
-            this.storyText.innerText = errorMsg;
-            this.speakArabic("عذراً يا بطل، حاول أن تسألني مرة أخرى!");
+            this.playLocalRecordedFallback(childText);
             if (this.bus) {
-                this.bus.postMessage({ event: 'ROBOT_ERROR', error: e.message });
+                this.bus.postMessage({ event: 'ROBOT_ERROR', code: e.apiStatus || e.httpStatus || 'GEMINI_ERROR', error: e.message });
             }
         }
     }
