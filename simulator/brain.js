@@ -563,7 +563,7 @@ class RobotBrain {
                 this.composerTestResult.innerHTML = `
                     <div style="background:rgba(16,185,129,0.14); border:1px solid #10b981; border-radius:10px; padding:12px; color:#f1f5f9;">
                         <div style="font-weight:700; color:#34d399; margin-bottom:6px;">
-                            ✨ تم تركيب الرد بنجاح (الوضع: ${parsed.mode === 'blocks' ? 'لبنات فقط' : 'هجين ذكي'}):
+                            ✨ تم تركيب الرد بنجاح (الوضع: ${parsed.mode === 'blocks' ? 'لبنات مسجلة' : (parsed.mode === 'hybrid' ? 'هجين ذكي' : 'رد نصي ذكي')}):
                         </div>
                         <div class="composer-sequence-chips">${chipsHtml}</div>
                     </div>
