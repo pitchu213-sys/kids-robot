@@ -4,439 +4,599 @@
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "wonder",
-    "led": { "pattern": "sparkle", "color": "#ffcf00" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#ffcf00"
+    },
     "template": "[wonder] واو! هذا مدهش حقاً!",
     "text": "واو! هذا مدهش حقاً!",
     "audio": "audio/blocks/open_wow.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 1
   },
   {
     "id": "open_hero",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "spin", "color": "#00f2fe" },
+    "led": {
+      "pattern": "spin",
+      "color": "#00f2fe"
+    },
     "template": "[happy] يا أهلاً ببطلي الذكي!",
     "text": "يا أهلاً ببطلي الذكي!",
     "audio": "audio/blocks/open_hero.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 2
   },
   {
     "id": "open_friend",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#00f2fe" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#00f2fe"
+    },
     "template": "[happy] مرحباً يا صديقي الجميل!",
     "text": "مرحباً يا صديقي الجميل!",
     "audio": "audio/blocks/open_friend.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 3
   },
   {
     "id": "open_think",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "curious",
-    "led": { "pattern": "spin", "color": "#a855f7" },
+    "led": {
+      "pattern": "spin",
+      "color": "#a855f7"
+    },
     "template": "[curious] هممم... دعني أفكر معك لحظة!",
     "text": "هممم... دعني أفكر معك لحظة!",
     "audio": "audio/blocks/open_think.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 4
   },
   {
     "id": "open_haha",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#ec4899" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#ec4899"
+    },
     "template": "[happy] هاهاها! هذا مضحك وممتع جداً!",
     "text": "هاهاها! هذا مضحك وممتع جداً!",
     "audio": "audio/blocks/open_haha.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 5
   },
   {
     "id": "open_yay",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "sparkle", "color": "#22c55e" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#22c55e"
+    },
     "template": "[happy] يا سلام! خبر رائع يسعدني كثيراً!",
     "text": "يا سلام! خبر رائع يسعدني كثيراً!",
     "audio": "audio/blocks/open_yay.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 6
   },
   {
     "id": "open_sweet",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#ff2a70" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#ff2a70"
+    },
     "template": "[love] يا عزيزي اللطيف، اسمعني جيداً!",
     "text": "يا عزيزي اللطيف، اسمعني جيداً!",
     "audio": "audio/blocks/open_sweet.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 7
   },
   {
     "id": "open_oh",
     "role": "opener",
     "role_ar": "افتتاحية وتفاعل",
     "emotion": "curious",
-    "led": { "pattern": "pulse", "color": "#38bdf8" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#38bdf8"
+    },
     "template": "[curious] أوه! أتفهم ما تشعر به تماماً!",
     "text": "أوه! أتفهم ما تشعر به تماماً!",
     "audio": "audio/blocks/open_oh.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 8
   },
   {
     "id": "praise_bravo",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#ffcf00" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#ffcf00"
+    },
     "template": "[happy] أحسنت! عمل رائع وممتاز يا بطل!",
     "text": "أحسنت! عمل رائع وممتاز يا بطل!",
     "audio": "audio/blocks/praise_bravo.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 9
   },
   {
     "id": "praise_smart",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "wonder",
-    "led": { "pattern": "sparkle", "color": "#ffcf00" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#ffcf00"
+    },
     "template": "[wonder] ما أذكاك! لديك عقل لامع كالنجوم!",
     "text": "ما أذكاك! لديك عقل لامع كالنجوم!",
     "audio": "audio/blocks/praise_smart.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 10
   },
   {
     "id": "praise_brave",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "happy",
-    "led": { "pattern": "spin", "color": "#f59e0b" },
+    "led": {
+      "pattern": "spin",
+      "color": "#f59e0b"
+    },
     "template": "[happy] أنت شجاع وقوي جداً مثل الأبطال!",
     "text": "أنت شجاع وقوي جداً مثل الأبطال!",
     "audio": "audio/blocks/praise_brave.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 11
   },
   {
     "id": "praise_proud",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#ff2a70" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#ff2a70"
+    },
     "template": "[love] أنا فخور بك جداً من كل قلبي!",
     "text": "أنا فخور بك جداً من كل قلبي!",
     "audio": "audio/blocks/praise_proud.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 12
   },
   {
     "id": "praise_artist",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "wonder",
-    "led": { "pattern": "rainbow", "color": "#a855f7" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#a855f7"
+    },
     "template": "[wonder] يا لك من مبدع وفنان رائع!",
     "text": "يا لك من مبدع وفنان رائع!",
     "audio": "audio/blocks/praise_artist.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 13
   },
   {
     "id": "praise_helper",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "happy",
-    "led": { "pattern": "pulse", "color": "#10b981" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#10b981"
+    },
     "template": "[happy] شكراً لمساعدتك، أنت متعاون وطيب جداً!",
     "text": "شكراً لمساعدتك، أنت متعاون وطيب جداً!",
     "audio": "audio/blocks/praise_helper.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 14
   },
   {
     "id": "praise_try",
     "role": "praise",
     "role_ar": "المدح والتشجيع",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#38bdf8" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#38bdf8"
+    },
     "template": "[love] لا بأس، المحاولة هي سر النجاح، أنت تستطيع!",
     "text": "لا بأس، المحاولة هي سر النجاح، أنت تستطيع!",
     "audio": "audio/blocks/praise_try.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 15
   },
   {
     "id": "feel_love",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#ff2a70" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#ff2a70"
+    },
     "template": "[love] أحبك كثيراً يا أعز أصدقائي!",
     "text": "أحبك كثيراً يا أعز أصدقائي!",
     "audio": "audio/blocks/feel_love.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 16
   },
   {
     "id": "feel_with_you",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#f43f5e" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#f43f5e"
+    },
     "template": "[love] أنا بجانبك دائماً ولن أتركك وحدك أبداً.",
     "text": "أنا بجانبك دائماً ولن أتركك وحدك أبداً.",
     "audio": "audio/blocks/feel_with_you.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 17
   },
   {
     "id": "feel_smile",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "happy",
-    "led": { "pattern": "sparkle", "color": "#ffcf00" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#ffcf00"
+    },
     "template": "[happy] ابتسم يا بطل، فابتسامتك تضيء المكان!",
     "text": "ابتسم يا بطل، فابتسامتك تضيء المكان!",
     "audio": "audio/blocks/feel_smile.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 18
   },
   {
     "id": "feel_missed",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#ec4899" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#ec4899"
+    },
     "template": "[love] لقد اشتقت للحديث واللعب معك كثيراً!",
     "text": "لقد اشتقت للحديث واللعب معك كثيراً!",
     "audio": "audio/blocks/feel_missed.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 19
   },
   {
     "id": "feel_calm",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "sleepy",
-    "led": { "pattern": "pulse", "color": "#6366f1" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#6366f1"
+    },
     "template": "[sleepy] خذ نفساً عميقاً واهدأ، كل شيء سيكون بخير.",
     "text": "خذ نفساً عميقاً واهدأ، كل شيء سيكون بخير.",
     "audio": "audio/blocks/feel_calm.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 20
   },
   {
     "id": "feel_happy_for_you",
     "role": "feelings",
     "role_ar": "المشاعر والمواساة",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#22c55e" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#22c55e"
+    },
     "template": "[happy] سعادتك تجعل قلبي الصغير يرقص فرحاً!",
     "text": "سعادتك تجعل قلبي الصغير يرقص فرحاً!",
     "audio": "audio/blocks/feel_happy_for_you.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 21
   },
   {
     "id": "routine_food",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "happy",
-    "led": { "pattern": "spin", "color": "#22c55e" },
+    "led": {
+      "pattern": "spin",
+      "color": "#22c55e"
+    },
     "template": "[happy] الطعام الصحي يمنحك القوة والنشاط طوال اليوم!",
     "text": "الطعام الصحي يمنحك القوة والنشاط طوال اليوم!",
     "audio": "audio/blocks/routine_food.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 22
   },
   {
     "id": "routine_water",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "happy",
-    "led": { "pattern": "pulse", "color": "#06b6d4" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#06b6d4"
+    },
     "template": "[happy] لا تنسَ شرب الماء لتبقى نشيطاً ومنتعشاً!",
     "text": "لا تنسَ شرب الماء لتبقى نشيطاً ومنتعشاً!",
     "audio": "audio/blocks/routine_water.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 23
   },
   {
     "id": "routine_tidy",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "happy",
-    "led": { "pattern": "sparkle", "color": "#06b6d4" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#06b6d4"
+    },
     "template": "[happy] غرفتك تصبح أجمل عندما نرتب الألعاب في مكانها!",
     "text": "غرفتك تصبح أجمل عندما نرتب الألعاب في مكانها!",
     "audio": "audio/blocks/routine_tidy.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 24
   },
   {
     "id": "routine_sleep",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "sleepy",
-    "led": { "pattern": "pulse", "color": "#6366f1" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#6366f1"
+    },
     "template": "[sleepy] النوم باكراً يريح جسمك ويجلب لك أحلاماً جميلة.",
     "text": "النوم باكراً يريح جسمك ويجلب لك أحلاماً جميلة.",
     "audio": "audio/blocks/routine_sleep.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 25
   },
   {
     "id": "routine_clean",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "happy",
-    "led": { "pattern": "spin", "color": "#00f2fe" },
+    "led": {
+      "pattern": "spin",
+      "color": "#00f2fe"
+    },
     "template": "[happy] النظافة وغسل اليدين يحميانك ويحافظان على صحتك!",
     "text": "النظافة وغسل اليدين يحميانك ويحافظان على صحتك!",
     "audio": "audio/blocks/routine_clean.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 26
   },
   {
     "id": "routine_study",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "curious",
-    "led": { "pattern": "spin", "color": "#a855f7" },
+    "led": {
+      "pattern": "spin",
+      "color": "#a855f7"
+    },
     "template": "[curious] التعلم والقراءة يفتحان لنا أبواب المغامرات العجيبة!",
     "text": "التعلم والقراءة يفتحان لنا أبواب المغامرات العجيبة!",
     "audio": "audio/blocks/routine_study.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 27
   },
   {
     "id": "routine_kind",
     "role": "routine",
     "role_ar": "الروتين والعادات",
     "emotion": "love",
-    "led": { "pattern": "pulse", "color": "#ec4899" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#ec4899"
+    },
     "template": "[love] الكلام اللطيف واللعب الهادئ يجعلان الجميع يحبونك!",
     "text": "الكلام اللطيف واللعب الهادئ يجعلان الجميع يحبونك!",
     "audio": "audio/blocks/routine_kind.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 28
   },
   {
     "id": "play_space",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "wonder",
-    "led": { "pattern": "spin", "color": "#a855f7" },
+    "led": {
+      "pattern": "spin",
+      "color": "#a855f7"
+    },
     "template": "[wonder] تخيّل أننا نطير الآن في صاروخ سريع نحو القمر!",
     "text": "تخيّل أننا نطير الآن في صاروخ سريع نحو القمر!",
     "audio": "audio/blocks/play_space.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 29
   },
   {
     "id": "play_forest",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "curious",
-    "led": { "pattern": "spin", "color": "#22c55e" },
+    "led": {
+      "pattern": "spin",
+      "color": "#22c55e"
+    },
     "template": "[curious] هيا نتخيل أنفسنا في غابة مليئة بالحيوانات اللطيفة!",
     "text": "هيا نتخيل أنفسنا في غابة مليئة بالحيوانات اللطيفة!",
     "audio": "audio/blocks/play_forest.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 30
   },
   {
     "id": "play_story",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "happy",
-    "led": { "pattern": "sparkle", "color": "#ff9800" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#ff9800"
+    },
     "template": "[happy] لدي قصة مشوقة ومغامرة جديدة بانتظارنا!",
     "text": "لدي قصة مشوقة ومغامرة جديدة بانتظارنا!",
     "audio": "audio/blocks/play_story.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 31
   },
   {
     "id": "play_draw",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#ec4899" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#ec4899"
+    },
     "template": "[happy] ما رأيك أن ترسم شيئاً جميلاً بألوانك المفضلة؟",
     "text": "ما رأيك أن ترسم شيئاً جميلاً بألوانك المفضلة؟",
     "audio": "audio/blocks/play_draw.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 32
   },
   {
     "id": "play_dance",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#00f2fe" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#00f2fe"
+    },
     "template": "[happy] هيا نحتفل معاً ونرقص بحماس وسعادة!",
     "text": "هيا نحتفل معاً ونرقص بحماس وسعادة!",
     "audio": "audio/blocks/play_dance.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 33
   },
   {
     "id": "play_magic",
     "role": "play",
     "role_ar": "اللعب والخيال",
     "emotion": "wonder",
-    "led": { "pattern": "sparkle", "color": "#a855f7" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#a855f7"
+    },
     "template": "[wonder] يا للروعة! عالم الخيال مليء بالمفاجآت الساحرة!",
     "text": "يا للروعة! عالم الخيال مليء بالمفاجآت الساحرة!",
     "audio": "audio/blocks/play_magic.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 34
   },
   {
     "id": "close_tell_more",
     "role": "closer",
     "role_ar": "خواتيم وتفاعل",
     "emotion": "curious",
-    "led": { "pattern": "spin", "color": "#00f2fe" },
+    "led": {
+      "pattern": "spin",
+      "color": "#00f2fe"
+    },
     "template": "[curious] أخبرني أكثر! ماذا حدث بعد ذلك؟",
     "text": "أخبرني أكثر! ماذا حدث بعد ذلك؟",
     "audio": "audio/blocks/close_tell_more.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 35
   },
   {
     "id": "close_what_think",
     "role": "closer",
     "role_ar": "خواتيم وتفاعل",
     "emotion": "curious",
-    "led": { "pattern": "pulse", "color": "#a855f7" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#a855f7"
+    },
     "template": "[curious] ما رأيك أنت يا بطلي الذكي؟",
     "text": "ما رأيك أنت يا بطلي الذكي؟",
     "audio": "audio/blocks/close_what_think.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 36
   },
   {
     "id": "close_lets_go",
     "role": "closer",
     "role_ar": "خواتيم وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "rainbow", "color": "#ffcf00" },
+    "led": {
+      "pattern": "rainbow",
+      "color": "#ffcf00"
+    },
     "template": "[happy] هيا ننطلق معاً! هل أنت مستعد؟",
     "text": "هيا ننطلق معاً! هل أنت مستعد؟",
     "audio": "audio/blocks/close_lets_go.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 37
   },
   {
     "id": "close_high_five",
     "role": "closer",
     "role_ar": "خواتيم وتفاعل",
     "emotion": "happy",
-    "led": { "pattern": "sparkle", "color": "#22c55e" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#22c55e"
+    },
     "template": "[happy] أعطني كفك يا بطل! نحن أفضل فريق!",
     "text": "أعطني كفك يا بطل! نحن أفضل فريق!",
     "audio": "audio/blocks/close_high_five.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 38
   },
   {
     "id": "close_goodbye",
     "role": "closer",
     "role_ar": "خواتيم وتفاعل",
     "emotion": "sleepy",
-    "led": { "pattern": "pulse", "color": "#6366f1" },
+    "led": {
+      "pattern": "pulse",
+      "color": "#6366f1"
+    },
     "template": "[sleepy] إلى اللقاء قريباً، أحلاماً سعيدة يا صديقي!",
     "text": "إلى اللقاء قريباً، أحلاماً سعيدة يا صديقي!",
     "audio": "audio/blocks/close_goodbye.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 39
   },
   {
     "id": "bridge_smart_q",
     "role": "closer",
     "role_ar": "جسر للأسئلة العلمية",
     "emotion": "curious",
-    "led": { "pattern": "sparkle", "color": "#38bdf8" },
+    "led": {
+      "pattern": "sparkle",
+      "color": "#38bdf8"
+    },
     "template": "[curious] يا له من سؤال ذكي ومميز! إليك الإجابة:",
     "text": "يا له من سؤال ذكي ومميز! إليك الإجابة:",
     "audio": "audio/blocks/bridge_smart_q.mp3",
-    "recorded": false
+    "recorded": true,
+    "number": 40
   }
 ]

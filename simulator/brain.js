@@ -450,13 +450,17 @@ class RobotBrain {
             card.className = 'block-card';
 
             const emotionText = emotionLabels[block.emotion] || block.emotion;
+            const numberBadge = block.number ? `<span style="font-weight:900; color:#38bdf8; margin-left:4px;">#${block.number}</span>` : '';
 
             card.innerHTML = `
                 <div class="block-top">
-                    <span class="block-id">${block.id}</span>
+                    <div>
+                        ${numberBadge}
+                        <span class="block-id">${block.id}</span>
+                    </div>
                     <div style="display:flex; gap:6px; align-items:center;">
                         <span class="qa-badge qa-badge-emotion">${emotionText}</span>
-                        <span class="qa-badge" style="background:rgba(255,255,255,0.08); font-size:0.75rem;">${block.role_ar || block.role}</span>
+                        <span class="qa-badge qa-badge-voice">🎙️ صوت مسجل</span>
                     </div>
                 </div>
 
@@ -464,25 +468,13 @@ class RobotBrain {
                     ${block.text}
                 </div>
 
-                <div class="block-footer">
-                    <button class="btn-secondary play-preview-btn" style="padding:4px 10px; font-size:0.8rem;">
-                        🔊 استمع هنا
-                    </button>
+                <div class="block-footer" style="flex-wrap:wrap; gap:8px;">
+                    <audio controls preload="none" src="${block.audio}" style="height:28px; max-width:180px;"></audio>
                     <button class="btn-primary play-robot-btn" style="padding:4px 12px; font-size:0.8rem;">
                         🚀 شغّل على الروبوت
                     </button>
                 </div>
             `;
-
-            // Preview locally
-            card.querySelector('.play-preview-btn').addEventListener('click', () => {
-                if (block.recorded && block.audio) {
-                    const aud = new Audio(block.audio);
-                    aud.play().catch(() => this.speakWebSpeech(block.text));
-                } else {
-                    this.speakWebSpeech(block.text);
-                }
-            });
 
             // Trigger on robot face
             card.querySelector('.play-robot-btn').addEventListener('click', () => {
@@ -491,7 +483,7 @@ class RobotBrain {
                     id: block.id,
                     block: block
                 });
-                this.logActivity(`🧩 تشغيل اللبنة الصوتية: [${block.id}] "${block.text}"`);
+                this.logActivity(`🧩 تشغيل اللبنة الصوتية: [#${block.number || ''} ${block.id}] "${block.text}"`);
             });
 
             this.voiceBlocksContainer.appendChild(card);
