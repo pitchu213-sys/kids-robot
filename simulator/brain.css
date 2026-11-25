@@ -535,3 +535,85 @@ input[type="text"], input[type="number"] {
     max-width: 220px;
 }
 
+/* Modular Voice Blocks UI */
+.quick-phrase-btn.active-filter {
+    background: var(--accent-cyan);
+    color: #06152b;
+    border-color: var(--accent-cyan);
+}
+
+.blocks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 12px;
+}
+
+.block-card {
+    background: #141a2e;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s;
+}
+
+.block-card:hover {
+    border-color: rgba(0, 242, 254, 0.45);
+}
+
+.block-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.block-id {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    background: rgba(0, 242, 254, 0.1);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.block-template {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #f1f5f9;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 8px 10px;
+    border-radius: 8px;
+    border-right: 3px solid var(--primary-color);
+}
+
+.block-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.composer-sequence-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.composer-chip {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #e0e7ff;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+

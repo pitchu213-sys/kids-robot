@@ -29,8 +29,9 @@ class RobotBrain {
         // Cross-tab / Cross-window Real-time Sync Bus
         this.channel = new BroadcastChannel('kids_robot_bus');
         
-        // QA Library State
+        // QA Library & Voice Blocks State
         this.qaLibrary = [];
+        this.voiceBlocks = [];
 
         // WebSocket for Backend / Remote ESP32
         this.ws = null;
@@ -43,6 +44,7 @@ class RobotBrain {
         this.setupTabs();
         this.setupLiveControls();
         this.setupQALibrary();
+        this.setupVoiceBlocks();
         this.setupGeminiAI();
         this.setupStories();
         this.setupChildProfile();
@@ -374,6 +376,225 @@ class RobotBrain {
         });
     }
 
+    // --- 2.8. MODULAR VOICE BLOCKS & AI COMPOSER ---
+    async setupVoiceBlocks() {
+        this.voiceBlocksContainer = document.getElementById('voiceBlocksContainer');
+        this.blocksProgressBadge = document.getElementById('blocksProgressBadge');
+        this.composerTestInput = document.getElementById('composerTestInput');
+        this.composerTestBtn = document.getElementById('composerTestBtn');
+        this.composerTestResult = document.getElementById('composerTestResult');
+        this.currentBlockFilter = 'all';
+
+        // Filter Bar Buttons
+        const filterBtns = document.querySelectorAll('#blockFilterBar .quick-phrase-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active-filter'));
+                btn.classList.add('active-filter');
+                this.currentBlockFilter = btn.getAttribute('data-role') || 'all';
+                this.renderVoiceBlocks();
+            });
+        });
+
+        // Test Composer Button
+        if (this.composerTestBtn && this.composerTestInput) {
+            this.composerTestBtn.addEventListener('click', () => this.testAIComposer());
+            this.composerTestInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.testAIComposer();
+            });
+        }
+
+        await this.loadVoiceBlocks();
+    }
+
+    async loadVoiceBlocks() {
+        try {
+            const res = await fetch('voice_blocks.json?v=' + Date.now());
+            if (res.ok) {
+                this.voiceBlocks = await res.json();
+                this.renderVoiceBlocks();
+                if (this.blocksProgressBadge) {
+                    const recordedCount = this.voiceBlocks.filter(b => b.recorded).length;
+                    this.blocksProgressBadge.innerText = `اللبنات: ${this.voiceBlocks.length} (${recordedCount} مسجل صوتياً)`;
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load voice_blocks.json in Brain:', e);
+        }
+    }
+
+    renderVoiceBlocks() {
+        if (!this.voiceBlocksContainer) return;
+        this.voiceBlocksContainer.innerHTML = '';
+
+        const emotionLabels = {
+            happy: '😊 سعيد',
+            wonder: '🤩 مندهش',
+            curious: '🤔 فضولي',
+            love: '❤️ حب/حنان',
+            sleepy: '😴 ناعس/هادئ'
+        };
+
+        const filtered = (this.voiceBlocks || []).filter(b => {
+            if (this.currentBlockFilter === 'all') return true;
+            return b.role === this.currentBlockFilter;
+        });
+
+        if (filtered.length === 0) {
+            this.voiceBlocksContainer.innerHTML = '<p style="color:#94a3b8; padding:12px;">لا توجد لبنات مطابقة لهذا القسم.</p>';
+            return;
+        }
+
+        filtered.forEach(block => {
+            const card = document.createElement('div');
+            card.className = 'block-card';
+
+            const emotionText = emotionLabels[block.emotion] || block.emotion;
+
+            card.innerHTML = `
+                <div class="block-top">
+                    <span class="block-id">${block.id}</span>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <span class="qa-badge qa-badge-emotion">${emotionText}</span>
+                        <span class="qa-badge" style="background:rgba(255,255,255,0.08); font-size:0.75rem;">${block.role_ar || block.role}</span>
+                    </div>
+                </div>
+
+                <div class="block-template">
+                    ${block.text}
+                </div>
+
+                <div class="block-footer">
+                    <button class="btn-secondary play-preview-btn" style="padding:4px 10px; font-size:0.8rem;">
+                        🔊 استمع هنا
+                    </button>
+                    <button class="btn-primary play-robot-btn" style="padding:4px 12px; font-size:0.8rem;">
+                        🚀 شغّل على الروبوت
+                    </button>
+                </div>
+            `;
+
+            // Preview locally
+            card.querySelector('.play-preview-btn').addEventListener('click', () => {
+                if (block.recorded && block.audio) {
+                    const aud = new Audio(block.audio);
+                    aud.play().catch(() => this.speakWebSpeech(block.text));
+                } else {
+                    this.speakWebSpeech(block.text);
+                }
+            });
+
+            // Trigger on robot face
+            card.querySelector('.play-robot-btn').addEventListener('click', () => {
+                this.broadcastCommand({
+                    event: 'PLAY_VOICE_BLOCK',
+                    id: block.id,
+                    block: block
+                });
+                this.logActivity(`🧩 تشغيل اللبنة الصوتية: [${block.id}] "${block.text}"`);
+            });
+
+            this.voiceBlocksContainer.appendChild(card);
+        });
+    }
+
+    async testAIComposer() {
+        const text = this.composerTestInput?.value.trim();
+        if (!text) {
+            alert('الرجاء كتابة جملة تجريبية يقولها الطفل!');
+            return;
+        }
+
+        const apiKey = this.geminiApiKeyInput?.value.trim() || localStorage.getItem('kids_robot_gemini_key');
+        if (!apiKey) {
+            alert('الرجاء إدخال وحفظ مفتاح Gemini API أولاً لتجربة التركيب الذكي!');
+            return;
+        }
+
+        if (!this.voiceBlocks || this.voiceBlocks.length === 0) {
+            alert('جاري تحميل اللبنات الصوتية، حاول بعد لحظة.');
+            return;
+        }
+
+        this.composerTestBtn.disabled = true;
+        this.composerTestBtn.innerText = '🧠 جاري التفكير وتركيب الرد...';
+        if (this.composerTestResult) {
+            this.composerTestResult.innerHTML = '<span style="color:#00f2fe;">⏳ Gemini يحلل كلام الطفل ويختار أنسب اللبنات المتتالية...</span>';
+        }
+
+        try {
+            let childProfile = null;
+            try {
+                const saved = localStorage.getItem('kids_robot_child_profile');
+                if (saved) childProfile = JSON.parse(saved);
+            } catch (e) {}
+
+            const promptText = window.KidsRobotQA.buildComposerPrompt(
+                this.voiceBlocks,
+                text,
+                childProfile,
+                this.geminiSystemPrompt?.value
+            );
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                    maxOutputTokens: 140,
+                    temperature: 0.4
+                }
+            };
+
+            const modelName = localStorage.getItem('kids_robot_active_model') || 'gemini-1.5-flash';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                throw new Error(`خطأ من خادم Google (${res.status})`);
+            }
+
+            const data = await res.json();
+            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            const parsed = window.KidsRobotQA.parseComposerReply(raw, this.voiceBlocks);
+
+            const chipsHtml = parsed.steps.map(s => `
+                <span class="composer-chip">
+                    ${s.role === 'dynamic' ? '⚡ ذكي' : '🧩 ' + s.id} (${s.emotion}): "${s.text}"
+                </span>
+            `).join(' ➔ ');
+
+            if (this.composerTestResult) {
+                this.composerTestResult.innerHTML = `
+                    <div style="background:rgba(16,185,129,0.14); border:1px solid #10b981; border-radius:10px; padding:12px; color:#f1f5f9;">
+                        <div style="font-weight:700; color:#34d399; margin-bottom:6px;">
+                            ✨ تم تركيب الرد بنجاح (الوضع: ${parsed.mode === 'blocks' ? 'لبنات فقط' : 'هجين ذكي'}):
+                        </div>
+                        <div class="composer-sequence-chips">${chipsHtml}</div>
+                    </div>
+                `;
+            }
+
+            // Broadcast sequence to robot face
+            this.broadcastCommand({
+                event: 'PLAY_BLOCK_SEQUENCE',
+                steps: parsed.steps
+            });
+            this.logActivity(`✨ تركيب رد متسلسل لـ "${text}": ${parsed.steps.map(s => s.id).join(' + ')}`);
+        } catch (e) {
+            console.error('Composer test error:', e);
+            if (this.composerTestResult) {
+                this.composerTestResult.innerHTML = `<span style="color:#ef4444;">❌ فشل التركيب: ${e.message}</span>`;
+            }
+        } finally {
+            this.composerTestBtn.disabled = false;
+            this.composerTestBtn.innerText = '✨ ركّب وشغّل الرد بالذكاء الاصطناعي';
+        }
+    }
+
     // --- 3. GOOGLE GEMINI AI VOICE & CHAT INTEGRATION ---
     setupGeminiAI() {
         this.availableModels = [];
@@ -392,6 +613,18 @@ class RobotBrain {
 
         if (savedVoice) this.geminiVoiceSelect.value = savedVoice;
         if (savedPrompt) this.geminiSystemPrompt.value = savedPrompt;
+
+        // Dialect Selector
+        const langSelect = document.getElementById('speechLangSelect');
+        if (langSelect) {
+            langSelect.value = localStorage.getItem('kids_robot_lang') || 'ar-TN';
+            langSelect.addEventListener('change', () => {
+                const newLang = langSelect.value;
+                localStorage.setItem('kids_robot_lang', newLang);
+                this.broadcastCommand({ event: 'SET_RECOGNITION_LANG', lang: newLang });
+                this.logActivity(`🌐 تغيير لهجة الاستماع إلى: ${newLang}`);
+            });
+        }
 
         // Save Key Button
         this.saveGeminiKeyBtn.addEventListener('click', async () => {

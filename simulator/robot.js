@@ -53,6 +53,7 @@ class RobotSimulator {
         this.speechSynth = window.speechSynthesis;
         this.recognition = null;
         this.audioCtx = null;
+        this.playbackToken = 0;
 
         // WebSocket
         this.ws = null;
@@ -64,8 +65,9 @@ class RobotSimulator {
         this.storyIndex = 0;
         this.waitingForAction = null; // 'touch', 'voice', null
 
-        // QA Library State (Curated Q&A with recorded cartoon voice)
+        // QA Library & Modular Voice Blocks State
         this.qaLibrary = [];
+        this.voiceBlocks = [];
 
         // Cross-tab / Multi-device Sync Bus with Robot Brain
         this.bus = new BroadcastChannel('kids_robot_bus');
@@ -85,6 +87,7 @@ class RobotSimulator {
             console.log('Received from Brain:', data);
 
             if (data.event === 'SAY_TEXT') {
+                this.stopAllSpeech();
                 if (data.face) this.setEmotion(data.face);
                 if (data.led) this.setLedPattern(data.led.pattern, data.led.color);
                 if (data.text) {
@@ -96,6 +99,7 @@ class RobotSimulator {
             } else if (data.event === 'SET_LED') {
                 this.setLedPattern(data.led.pattern, data.led.color);
             } else if (data.event === 'PLAY_GEMINI_AUDIO') {
+                this.stopAllSpeech();
                 if (data.face) this.setEmotion(data.face);
                 if (data.led) this.setLedPattern(data.led.pattern, data.led.color || '#00f2fe');
                 if (data.text) this.storyText.innerText = data.text;
@@ -108,13 +112,29 @@ class RobotSimulator {
                     this.speakArabic(data.text);
                 }
             } else if (data.event === 'PLAY_QA_ENTRY') {
-                const item = (this.qaLibrary || []).find(q => q.id === data.id);
+                const item = (this.qaLibrary || []).find(q => q.id === data.id) || data.item;
                 if (item) {
                     this.playQAResponse(item);
                 }
+            } else if (data.event === 'PLAY_VOICE_BLOCK') {
+                const block = (this.voiceBlocks || []).find(b => b.id === data.id) || data.block;
+                if (block) {
+                    this.playBlockSequence([block]);
+                }
+            } else if (data.event === 'PLAY_BLOCK_SEQUENCE') {
+                if (Array.isArray(data.steps) && data.steps.length > 0) {
+                    this.playBlockSequence(data.steps);
+                }
+            } else if (data.event === 'SET_RECOGNITION_LANG') {
+                if (data.lang) {
+                    localStorage.setItem('kids_robot_lang', data.lang);
+                    if (this.recognition) this.recognition.lang = data.lang;
+                }
             } else if (data.event === 'RELOAD_QA_LIBRARY') {
                 this.loadQaLibrary();
+                this.loadVoiceBlocks();
             } else if (data.event === 'START_STORY') {
+                this.stopAllSpeech();
                 this.loadLocalDemoStory(data.story_id);
             } else if (data.event === 'BRAIN_HELLO') {
                 this.bus.postMessage({ event: 'ROBOT_FACE_ONLINE' });
@@ -129,6 +149,7 @@ class RobotSimulator {
         this.initAudioContext();
         this.initSpeechRecognition();
         this.loadQaLibrary();
+        this.loadVoiceBlocks();
         this.setupEvents();
         this.loadLocalDemoStory('space');
         this.tryConnectWebSocket();
@@ -445,6 +466,23 @@ class RobotSimulator {
     }
 
     // --- 4. SPEECH SYNTHESIS (TTS) & RECOGNITION (STT) ---
+    stopAllSpeech() {
+        this.playbackToken++;
+        this.isSpeaking = false;
+        if (this.currentAudio) {
+            try {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+            } catch (e) {}
+            this.currentAudio = null;
+        }
+        if (this.speechSynth) {
+            try {
+                this.speechSynth.cancel();
+            } catch (e) {}
+        }
+    }
+
     playAudioFile(url, onComplete, fallbackText = null) {
         if (this.currentAudio) {
             try {
@@ -453,6 +491,13 @@ class RobotSimulator {
             } catch (e) {}
             this.currentAudio = null;
         }
+
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            if (onComplete) onComplete();
+        };
 
         const audio = new Audio(url);
         this.currentAudio = audio;
@@ -467,10 +512,12 @@ class RobotSimulator {
         audio.onended = () => {
             this.isSpeaking = false;
             this.setEmotion('happy');
-            if (onComplete) onComplete();
+            finish();
         };
 
         const doFallback = () => {
+            if (settled) return;
+            settled = true;
             this.isSpeaking = false;
             const textToSpeak = fallbackText || this.storyText?.innerText || '';
             console.log('Falling back to speech synthesis for text:', textToSpeak);
@@ -501,34 +548,79 @@ class RobotSimulator {
             return;
         }
 
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            this.isSpeaking = false;
+            this.setEmotion('happy');
+            if (onComplete) onComplete();
+        };
+
         this.speechSynth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ar-SA';
         utterance.rate = 1.02;  // Natural, responsive conversation pace
         utterance.pitch = 1.22; // Cheerful, warm kid-robot pitch
 
-        // Select Arabic voice if available
         const voices = this.speechSynth.getVoices();
         const arVoice = voices.find(v => v.lang.startsWith('ar'));
         if (arVoice) utterance.voice = arVoice;
 
         utterance.onstart = () => {
             this.isSpeaking = true;
-            this.setEmotion('speaking');
+            if (this.emotion === 'happy') {
+                this.setEmotion('speaking');
+            }
         };
 
-        utterance.onend = () => {
-            this.isSpeaking = false;
-            this.setEmotion('happy');
-            if (onComplete) onComplete();
-        };
-
-        utterance.onerror = () => {
-            this.isSpeaking = false;
-            if (onComplete) onComplete();
-        };
+        utterance.onend = finish;
+        utterance.onerror = finish;
 
         this.speechSynth.speak(utterance);
+    }
+
+    playStepPromise(step) {
+        return new Promise((resolve) => {
+            if (step.recorded && step.audio) {
+                this.playAudioFile(step.audio, resolve, step.text);
+            } else {
+                this.speakArabic(step.text, resolve);
+            }
+        });
+    }
+
+    async playBlockSequence(steps, onComplete) {
+        if (!Array.isArray(steps) || steps.length === 0) return;
+        this.stopAllSpeech();
+        const token = this.playbackToken;
+
+        for (let i = 0; i < steps.length; i++) {
+            if (token !== this.playbackToken) return;
+            const step = steps[i];
+
+            this.storyText.innerText = step.text;
+            this.setEmotion(step.emotion || 'happy');
+            if (step.led) {
+                this.setLedPattern(step.led.pattern || 'spin', step.led.color || '#00f2fe');
+            }
+
+            await this.playStepPromise(step);
+            if (token !== this.playbackToken) return;
+
+            // Natural breath pause between modular blocks ([short pause])
+            if (i < steps.length - 1) {
+                await new Promise(r => setTimeout(r, 160));
+            }
+        }
+
+        if (token !== this.playbackToken) return;
+        this.setEmotion('happy');
+        if (onComplete) {
+            onComplete();
+        } else {
+            this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
+        }
     }
 
     initSpeechRecognition() {
@@ -570,7 +662,7 @@ class RobotSimulator {
         }
     }
 
-    // --- 4.5. CUSTOM QA LIBRARY (0-LATENCY HUMAN CARTOON VOICE) ---
+    // --- 4.5. CUSTOM QA LIBRARY & MODULAR VOICE BLOCKS ---
     async loadQaLibrary() {
         try {
             const customQA = localStorage.getItem('kids_robot_qa_library');
@@ -590,90 +682,25 @@ class RobotSimulator {
         }
     }
 
-    normalizeArabic(text) {
-        if (!text) return '';
-        return text
-            .toLowerCase()
-            .replace(/[\u064B-\u065F\u0670]/g, '') // remove tashkeel
-            .replace(/[إأآا]/g, 'ا')
-            .replace(/ة/g, 'ه')
-            .replace(/ى/g, 'ي')
-            .replace(/[؟?.,!،؛:]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+    async loadVoiceBlocks() {
+        try {
+            const res = await fetch('voice_blocks.json?v=' + Date.now());
+            if (res.ok) {
+                this.voiceBlocks = await res.json();
+                console.log('Robot loaded Modular Voice Blocks:', this.voiceBlocks.length);
+            }
+        } catch (e) {
+            console.warn('Could not load voice_blocks.json in Robot:', e);
+        }
     }
 
     findMatchingQA(transcript) {
-        if (!this.qaLibrary || !this.qaLibrary.length) return null;
-        const normInput = this.normalizeArabic(transcript);
-        if (!normInput) return null;
-
-        const stopWords = ['يا', 'في', 'من', 'على', 'هل', 'هو', 'هي', 'مع', 'و', 'ان', 'ما', 'عن'];
-        const inputWords = normInput.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
-
-        let bestItem = null;
-        let highestScore = 0;
-
-        for (const item of this.qaLibrary) {
-            let score = 0;
-            const normTitle = this.normalizeArabic(item.title || '');
-            const normCat = this.normalizeArabic(item.category || '');
-
-            // 1. Exact match with title or category
-            if (normInput === normTitle) score += 1000;
-            if (normInput === normCat) score += 800;
-
-            // Substring / partial of title or category
-            if (normInput.includes(normTitle) || (normInput.length >= 4 && normTitle.includes(normInput))) {
-                score += 400;
-            }
-            if (normCat && (normInput.includes(normCat) || (normInput.length >= 4 && normCat.includes(normInput)))) {
-                score += 300;
-            }
-
-            // Title and Category word overlap
-            const metaWords = (normTitle + ' ' + normCat).split(' ').filter(w => w.length > 2 && !stopWords.includes(w));
-            for (const w of inputWords) {
-                if (metaWords.includes(w)) score += 150;
-            }
-
-            // 2. Triggers (Tunisian dialect & MSA)
-            if (item.triggers) {
-                for (const trig of item.triggers) {
-                    const normTrig = this.normalizeArabic(trig);
-                    if (!normTrig) continue;
-
-                    if (normInput === normTrig) {
-                        score += 1000;
-                    } else if (normInput.includes(normTrig)) {
-                        score += 500 + normTrig.length * 5;
-                    } else if (normTrig.includes(normInput) && normInput.length >= 3) {
-                        score += 250 + normInput.length * 5;
-                    } else {
-                        // Word overlap
-                        const trigWords = normTrig.split(' ').filter(w => w.length > 1 && !stopWords.includes(w));
-                        let matchedWords = 0;
-                        for (const tw of trigWords) {
-                            if (inputWords.includes(tw)) matchedWords++;
-                        }
-                        if (matchedWords > 0) {
-                            score += (matchedWords / trigWords.length) * 200;
-                        }
-                    }
-                }
-            }
-
-            if (score > highestScore) {
-                highestScore = score;
-                bestItem = item;
-            }
-        }
-
-        return highestScore >= 100 ? bestItem : null;
+        return window.KidsRobotQA ? window.KidsRobotQA.findMatchingQA(this.qaLibrary, transcript) : null;
     }
 
     playQAResponse(qaItem) {
         console.log('Playing QA Library response:', qaItem.title);
+        this.stopAllSpeech();
         this.storyText.innerText = qaItem.response_text;
         
         const emotion = qaItem.emotion || 'happy';
@@ -729,7 +756,7 @@ class RobotSimulator {
             return;
         }
 
-        // TIER 2: Full AI Conversational Response with Gemini
+        // TIER 2 & 3: Modular AI Voice Block Composer + Gemini Hybrid Fallback
         await this.askGeminiAndReply(transcript);
     }
 
@@ -781,23 +808,29 @@ class RobotSimulator {
             const candidateModels = [primaryModel, 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.8-flash'];
             const uniqueModels = [...new Set(candidateModels)];
 
-            const systemPrompt = localStorage.getItem('kids_robot_gemini_prompt') || 
-                "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. تحدث باللغة العربية الفصحى السهلة والمرحة وبنبرة دافئة كأنك صديق طفولي. أجب على الطفل بجملة واحدة فقط قصيرة ومشوقة جداً ومحفزة.";
+            const customPrompt = localStorage.getItem('kids_robot_gemini_prompt');
+            let childProfile = null;
+            try {
+                const savedProfile = localStorage.getItem('kids_robot_child_profile');
+                if (savedProfile) childProfile = JSON.parse(savedProfile);
+            } catch (e) {}
 
-            // Universal bulletproof Gemini payload
+            const useComposer = this.voiceBlocks && this.voiceBlocks.length > 0 && window.KidsRobotQA;
+            const promptText = useComposer
+                ? window.KidsRobotQA.buildComposerPrompt(this.voiceBlocks, childText, childProfile, customPrompt)
+                : `${customPrompt || "أنت روبوت أطفال ذكي ومرح اسمك 'روبي'. أجب على الطفل بجملة واحدة فقط قصيرة ومشوقة."}\n\nسؤال الطفل: ${childText}\nإجابتك السريعة والقصيرة للطفل:`;
+
             const payload = {
                 contents: [{
-                    parts: [{
-                        text: `${systemPrompt}\n\nسؤال الطفل: ${childText}\nإجابتك السريعة والقصيرة للطفل:`
-                    }]
+                    parts: [{ text: promptText }]
                 }],
                 generationConfig: {
-                    maxOutputTokens: 60,
-                    temperature: 0.7
+                    maxOutputTokens: useComposer ? 140 : 60,
+                    temperature: useComposer ? 0.45 : 0.7
                 }
             };
 
-            let textReply = '';
+            let rawReply = '';
             let successfulModel = '';
 
             for (const modelName of uniqueModels) {
@@ -811,8 +844,8 @@ class RobotSimulator {
 
                     if (res.ok) {
                         const data = await res.json();
-                        textReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                        if (textReply) {
+                        rawReply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                        if (rawReply) {
                             successfulModel = modelName;
                             localStorage.setItem('kids_robot_active_model', modelName);
                             break;
@@ -826,25 +859,43 @@ class RobotSimulator {
                 }
             }
 
-            if (!textReply) {
+            if (!rawReply) {
                 throw new Error('لم يرجع أي من نماذج Gemini إجابة، يرجى التأكد من صلاحية المفتاح');
             }
 
-            console.log(`Success with Gemini model (${successfulModel}):`, textReply);
-            this.storyText.innerText = textReply;
-            this.setEmotion('happy');
+            console.log(`Success with Gemini model (${successfulModel}):`, rawReply);
 
-            // Zero-latency instant local voice synthesis
-            this.speakArabic(textReply, () => {
+            if (useComposer) {
+                const parsed = window.KidsRobotQA.parseComposerReply(rawReply, this.voiceBlocks);
+                const fullText = parsed.steps.map(s => s.text).join(' ');
+                const sourceType = parsed.mode === 'blocks' ? 'ai_composer' : (parsed.mode === 'hybrid' ? 'ai_hybrid' : 'gemini');
+
+                if (this.bus) {
+                    this.bus.postMessage({
+                        event: 'ROBOT_REPLIED',
+                        reply: fullText,
+                        source: sourceType,
+                        blocks: parsed.steps.map(s => s.id),
+                        model: successfulModel
+                    });
+                }
+
+                await this.playBlockSequence(parsed.steps);
+                return;
+            }
+
+            this.storyText.innerText = rawReply;
+            this.setEmotion('happy');
+            this.speakArabic(rawReply, () => {
                 this.setEmotion('happy');
                 this.storyText.innerText = "اضغط (تحدث معي) لتسألني أي شيء آخر! 🌟";
             });
 
-            // Log to Parent Dashboard
             if (this.bus) {
                 this.bus.postMessage({ 
                     event: 'ROBOT_REPLIED', 
-                    reply: textReply,
+                    reply: rawReply,
+                    source: 'gemini',
                     model: successfulModel 
                 });
             }
@@ -867,6 +918,7 @@ class RobotSimulator {
         if (this.isListening) {
             this.recognition.stop();
         } else {
+            this.stopAllSpeech();
             this.recognition.start();
         }
     }
